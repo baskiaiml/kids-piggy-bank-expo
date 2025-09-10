@@ -1,20 +1,75 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { StatusBar } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import HomeScreen from "./src/screens/HomeScreen";
+import SavingsScreen from "./src/screens/SavingsScreen";
+import GoalsScreen from "./src/screens/GoalsScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
 
-export default function App() {
+const theme = {
+  primary: "#87CEEB",
+  secondary: "#B0E0E6",
+  accent: "#4682B4",
+  background: "#F0F8FF",
+  text: "#2F4F4F",
+  white: "#FFFFFF",
+  success: "#32CD32",
+  warning: "#FFD700",
+  error: "#FF6347",
+};
+
+const Tab = createBottomTabNavigator();
+
+const App = () => {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName;
+            if (route.name === "Home") {
+              iconName = "home";
+            } else if (route.name === "Savings") {
+              iconName = "account-balance-wallet";
+            } else if (route.name === "Goals") {
+              iconName = "flag";
+            } else if (route.name === "Settings") {
+              iconName = "settings";
+            }
+            return <MaterialIcons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: theme.accent,
+          tabBarInactiveTintColor: theme.text,
+          tabBarStyle: {
+            backgroundColor: theme.white,
+            borderTopColor: theme.primary,
+            borderTopWidth: 2,
+            height: 60,
+            paddingBottom: 5,
+            paddingTop: 5,
+          },
+          headerStyle: {
+            backgroundColor: theme.primary,
+            borderBottomColor: theme.accent,
+            borderBottomWidth: 2,
+          },
+          headerTintColor: theme.white,
+          headerTitleStyle: {
+            fontWeight: "bold",
+            fontSize: 18,
+          },
+        })}
+      >
+        <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Piggy Bank" }} />
+        <Tab.Screen name="Savings" component={SavingsScreen} options={{ title: "My Savings" }} />
+        <Tab.Screen name="Goals" component={GoalsScreen} options={{ title: "Goals" }} />
+        <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
