@@ -105,11 +105,11 @@ const HomeScreen = () => {
           />
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.addButton} onPress={addMoney}>
-              <MaterialIcons name="add" size={24} color={theme.white} />
+              <Icon name="add" size={24} color={theme.white} />
               <Text style={styles.buttonText}>Add Money</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.withdrawButton} onPress={withdrawMoney}>
-              <MaterialIcons name="remove" size={24} color={theme.white} />
+              <Icon name="remove" size={24} color={theme.white} />
               <Text style={styles.buttonText}>Withdraw</Text>
             </TouchableOpacity>
           </View>
