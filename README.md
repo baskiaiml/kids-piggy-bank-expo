@@ -127,13 +127,69 @@ npx expo run:android
 
 ### Android Development
 
-1. **Install Android Studio**
-2. **Set up Android SDK** and create a virtual device
-3. **Enable Developer Options** on your Android device (if using physical device)
-4. **Run the app**:
+#### Option 1: Using Expo Go (Recommended for Development)
+
+1. **Install Expo Go** on your Android device from [Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
+2. **Start the development server**:
+   ```bash
+   npm start
+   ```
+3. **Scan the QR code** with Expo Go app
+4. **No additional setup required** - this is the easiest way to test your app!
+
+#### Option 2: Using Android Studio (For Advanced Development)
+
+1. **Install Android Studio**:
+   - Download from [developer.android.com/studio](https://developer.android.com/studio)
+   - During installation, ensure **Android SDK** is selected
+
+2. **Set up Environment Variables** (Windows):
+   - Open **System Properties** → **Advanced** → **Environment Variables**
+   - Add these system variables:
+     ```
+     ANDROID_HOME = C:\Users\YourUsername\AppData\Local\Android\Sdk
+     ANDROID_SDK_ROOT = C:\Users\YourUsername\AppData\Local\Android\Sdk
+     ```
+   - Edit **Path** variable and add:
+     ```
+     %ANDROID_HOME%\platform-tools
+     %ANDROID_HOME%\tools
+     %ANDROID_HOME%\tools\bin
+     ```
+
+3. **Verify Installation**:
+   ```bash
+   adb version
+   ```
+
+4. **Create Android Virtual Device (AVD)**:
+   - Open Android Studio
+   - Go to **Tools** → **AVD Manager**
+   - Click **Create Virtual Device**
+   - Choose a device (e.g., Pixel 4)
+   - Download and select a system image (e.g., API 33)
+   - Click **Finish**
+
+5. **Run the app**:
    ```bash
    npm run android
    ```
+
+#### Troubleshooting Android Issues
+
+**If you get "ANDROID_HOME not found" error:**
+- Ensure Android Studio is installed
+- Check that environment variables are set correctly
+- Restart your terminal/command prompt after setting variables
+
+**If you get "adb not recognized" error:**
+- Add `%ANDROID_HOME%\platform-tools` to your PATH
+- Restart your terminal
+
+**If emulator doesn't start:**
+- Ensure AVD is created and started
+- Check that virtualization is enabled in BIOS
+- Try using Expo Go instead for easier development
 
 ### Web Development
 
