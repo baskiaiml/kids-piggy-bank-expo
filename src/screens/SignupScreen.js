@@ -52,7 +52,7 @@ const SignupScreen = ({ navigation }) => {
     setIsLoading(false);
 
     if (result.success) {
-      Alert.alert('Success', 'Account created successfully!', [
+      Alert.alert('Success', result.message || 'Account created successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } else {

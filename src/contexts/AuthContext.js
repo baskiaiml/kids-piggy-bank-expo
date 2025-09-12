@@ -92,7 +92,16 @@ export const AuthProvider = ({ children }) => {
       const userData = await AsyncStorage.getItem('userData');
       
       if (userData) {
-        return { success: false, error: 'User already registered' };
+        const existingUser = JSON.parse(userData);
+        // If user already exists with same phone number, just log them in
+        if (existingUser.phoneNumber === phoneNumber) {
+          setUser(existingUser);
+          setIsAuthenticated(true);
+          await updateLastLoginTime();
+          return { success: true, message: 'Welcome back! Logged in successfully.' };
+        } else {
+          return { success: false, error: 'A different user is already registered on this device' };
+        }
       }
       
       const newUser = {
@@ -107,7 +116,7 @@ export const AuthProvider = ({ children }) => {
       setUser(newUser);
       setIsAuthenticated(true);
       
-      return { success: true };
+      return { success: true, message: 'Account created successfully!' };
     } catch (error) {
       return { success: false, error: 'Signup failed' };
     }

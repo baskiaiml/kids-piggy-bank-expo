@@ -5,12 +5,15 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { StatusBar, View, ActivityIndicator, StyleSheet } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { KidsProvider } from "./src/contexts/KidsContext";
 import HomeScreen from "./src/screens/HomeScreen";
 import SavingsScreen from "./src/screens/SavingsScreen";
 import GoalsScreen from "./src/screens/GoalsScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
+import DashboardScreen from "./src/screens/DashboardScreen";
+import AddKidScreen from "./src/screens/AddKidScreen";
 
 const theme = {
   primary: "#87CEEB",
@@ -33,8 +36,8 @@ const MainTabs = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === "Home") {
-            iconName = "home";
+          if (route.name === "Dashboard") {
+            iconName = "dashboard";
           } else if (route.name === "Savings") {
             iconName = "account-balance-wallet";
           } else if (route.name === "Goals") {
@@ -66,11 +69,24 @@ const MainTabs = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Piggy Bank" }} />
-      <Tab.Screen name="Savings" component={SavingsScreen} options={{ title: "My Savings" }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: "Dashboard" }} />
+      <Tab.Screen name="Savings" component={SavingsScreen} options={{ title: "Savings" }} />
       <Tab.Screen name="Goals" component={GoalsScreen} options={{ title: "Goals" }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
     </Tab.Navigator>
+  );
+};
+
+const MainStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="AddKid" component={AddKidScreen} />
+    </Stack.Navigator>
   );
 };
 
@@ -101,7 +117,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <StatusBar barStyle="dark-content" backgroundColor={theme.background} />
-      {isAuthenticated ? <MainTabs /> : <AuthStack />}
+      {isAuthenticated ? <MainStack /> : <AuthStack />}
     </NavigationContainer>
   );
 };
@@ -109,7 +125,9 @@ const AppNavigator = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <AppNavigator />
+      <KidsProvider>
+        <AppNavigator />
+      </KidsProvider>
     </AuthProvider>
   );
 };
