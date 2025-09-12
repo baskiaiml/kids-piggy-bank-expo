@@ -1,16 +1,15 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  Switch,
   Alert,
-  Linking,
+  ScrollView,
 } from 'react-native';
-import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Icon } from 'expo-vector-icons';
+import { useAuth } from '../contexts/AuthContext';
 
 const theme = {
   primary: '#87CEEB',
@@ -25,360 +24,190 @@ const theme = {
 };
 
 const SettingsScreen = () => {
-  const [notifications, setNotifications] = useState(true);
-  const [soundEffects, setSoundEffects] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [biometric, setBiometric] = useState(false);
+  const { user, logout } = useAuth();
 
-  const handleExportData = () => {
+  const handleLogout = () => {
     Alert.alert(
-      'Export Data',
-      'Your savings data will be exported to a CSV file. Continue?',
+      'Logout',
+      'Are you sure you want to logout?',
       [
-        {text: 'Cancel', style: 'cancel'},
-        {text: 'Export', onPress: () => Alert.alert('Success', 'Data exported successfully!')},
-      ]
-    );
-  };
-
-  const handleImportData = () => {
-    Alert.alert(
-      'Import Data',
-      'Select a CSV file to import your savings data.',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {text: 'Import', onPress: () => Alert.alert('Success', 'Data imported successfully!')},
-      ]
-    );
-  };
-
-  const handleResetData = () => {
-    Alert.alert(
-      'Reset All Data',
-      'This will delete all your savings data. This action cannot be undone. Are you sure?',
-      [
-        {text: 'Cancel', style: 'cancel'},
         {
-          text: 'Reset',
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
           style: 'destructive',
-          onPress: () => Alert.alert('Success', 'All data has been reset!'),
+          onPress: logout,
         },
       ]
     );
   };
 
-  const handleContactSupport = () => {
-    Alert.alert(
-      'Contact Support',
-      'Choose how you would like to contact support:',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {text: 'Email', onPress: () => Linking.openURL('mailto:support@kidspiggybank.com')},
-        {text: 'Phone', onPress: () => Linking.openURL('tel:+1234567890')},
-      ]
-    );
-  };
-
-  const handleRateApp = () => {
-    Alert.alert(
-      'Rate App',
-      'Would you like to rate this app in the store?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {text: 'Rate', onPress: () => Alert.alert('Thank you!', 'Thank you for your feedback!')},
-      ]
-    );
-  };
-
-  const SettingItem = ({icon, title, subtitle, onPress, rightComponent, danger = false}) => (
-    <TouchableOpacity
-      style={[styles.settingItem, danger && styles.dangerItem]}
-      onPress={onPress}
-      disabled={!onPress}>
-      <View style={styles.settingLeft}>
-        <View style={[styles.settingIcon, danger && styles.dangerIcon]}>
-          <Icon name={icon} size={24} color={danger ? theme.error : theme.accent} />
-        </View>
-        <View style={styles.settingText}>
-          <Text style={[styles.settingTitle, danger && styles.dangerText]}>{title}</Text>
-          {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
-        </View>
-      </View>
-      {rightComponent || <Icon name="chevron-right" size={24} color={theme.text} />}
-    </TouchableOpacity>
-  );
-
   return (
-    <ScrollView style={styles.container}>
-      <LinearGradient
-        colors={[theme.primary, theme.secondary]}
-        style={styles.header}>
-        <View style={styles.headerContent}>
-          <Icon name="settings" size={40} color={theme.white} />
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>Customize your piggy bank experience</Text>
+    <LinearGradient
+      colors={[theme.background, theme.secondary]}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.header}>
+          <Icon name="settings" size={60} color={theme.accent} />
+          <Text style={styles.title}>Settings</Text>
         </View>
-      </LinearGradient>
 
-      <View style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon="notifications"
-              title="Notifications"
-              subtitle="Get reminders about your savings goals"
-              rightComponent={
-                <Switch
-                  value={notifications}
-                  onValueChange={setNotifications}
-                  trackColor={{false: theme.background, true: theme.primary}}
-                  thumbColor={notifications ? theme.white : theme.text}
-                />
-              }
-            />
-            <SettingItem
-              icon="volume-up"
-              title="Sound Effects"
-              subtitle="Play sounds for transactions"
-              rightComponent={
-                <Switch
-                  value={soundEffects}
-                  onValueChange={setSoundEffects}
-                  trackColor={{false: theme.background, true: theme.primary}}
-                  thumbColor={soundEffects ? theme.white : theme.text}
-                />
-              }
-            />
-            <SettingItem
-              icon="dark-mode"
-              title="Dark Mode"
-              subtitle="Switch to dark theme"
-              rightComponent={
-                <Switch
-                  value={darkMode}
-                  onValueChange={setDarkMode}
-                  trackColor={{false: theme.background, true: theme.primary}}
-                  thumbColor={darkMode ? theme.white : theme.text}
-                />
-              }
-            />
-            <SettingItem
-              icon="fingerprint"
-              title="Biometric Lock"
-              subtitle="Use fingerprint or face ID"
-              rightComponent={
-                <Switch
-                  value={biometric}
-                  onValueChange={setBiometric}
-                  trackColor={{false: theme.background, true: theme.primary}}
-                  thumbColor={biometric ? theme.white : theme.text}
-                />
-              }
-            />
+          <Text style={styles.sectionTitle}>Account Information</Text>
+          
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <Icon name="phone" size={20} color={theme.accent} />
+              <Text style={styles.infoLabel}>Phone Number:</Text>
+              <Text style={styles.infoValue}>{user?.phoneNumber || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Icon name="calendar-today" size={20} color={theme.accent} />
+              <Text style={styles.infoLabel}>Member Since:</Text>
+              <Text style={styles.infoValue}>
+                {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+              </Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Management</Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon="file-download"
-              title="Export Data"
-              subtitle="Download your savings data"
-              onPress={handleExportData}
-            />
-            <SettingItem
-              icon="file-upload"
-              title="Import Data"
-              subtitle="Restore from backup file"
-              onPress={handleImportData}
-            />
-            <SettingItem
-              icon="refresh"
-              title="Reset All Data"
-              subtitle="Clear all savings and goals"
-              onPress={handleResetData}
-              danger={true}
-            />
-          </View>
+          <Text style={styles.sectionTitle}>Security</Text>
+          
+          <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+            <View style={styles.settingLeft}>
+              <Icon name="logout" size={24} color={theme.error} />
+              <Text style={[styles.settingText, { color: theme.error }]}>Logout</Text>
+            </View>
+            <Icon name="chevron-right" size={20} color={theme.text} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon="info"
-              title="App Version"
-              subtitle="1.0.0"
-              onPress={null}
-            />
-            <SettingItem
-              icon="help"
-              title="Help & Support"
-              subtitle="Get help and contact support"
-              onPress={handleContactSupport}
-            />
-            <SettingItem
-              icon="star"
-              title="Rate App"
-              subtitle="Rate us on the app store"
-              onPress={handleRateApp}
-            />
-            <SettingItem
-              icon="privacy-tip"
-              title="Privacy Policy"
-              subtitle="Read our privacy policy"
-              onPress={() => Alert.alert('Privacy Policy', 'Privacy policy content here')}
-            />
-            <SettingItem
-              icon="description"
-              title="Terms of Service"
-              subtitle="Read our terms of service"
-              onPress={() => Alert.alert('Terms of Service', 'Terms of service content here')}
-            />
+          
+          <View style={styles.aboutCard}>
+            <Text style={styles.aboutText}>
+              Kids Piggy Bank v1.0.0
+            </Text>
+            <Text style={styles.aboutSubtext}>
+              A fun way for kids to learn about saving money!
+            </Text>
           </View>
         </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon="person"
-              title="Profile"
-              subtitle="Manage your profile information"
-              onPress={() => Alert.alert('Profile', 'Profile management coming soon!')}
-            />
-            <SettingItem
-              icon="security"
-              title="Security"
-              subtitle="Password and security settings"
-              onPress={() => Alert.alert('Security', 'Security settings coming soon!')}
-            />
-            <SettingItem
-              icon="logout"
-              title="Sign Out"
-              subtitle="Sign out of your account"
-              onPress={() => Alert.alert('Sign Out', 'Sign out functionality coming soon!')}
-            />
-          </View>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Kids Piggy Bank v1.0.0</Text>
-          <Text style={styles.footerText}>Made with ❤️ for kids</Text>
-        </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+  },
+  scrollContainer: {
+    padding: 20,
   },
   header: {
-    padding: 20,
-    paddingTop: 40,
-  },
-  headerContent: {
     alignItems: 'center',
+    marginBottom: 30,
   },
-  headerTitle: {
+  title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: theme.white,
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: theme.white,
-    opacity: 0.9,
-    textAlign: 'center',
-  },
-  content: {
-    padding: 20,
+    color: theme.text,
+    marginTop: 15,
   },
   section: {
-    marginBottom: 30,
+    marginBottom: 25,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: theme.text,
     marginBottom: 15,
-    marginLeft: 5,
   },
-  sectionContent: {
+  infoCard: {
     backgroundColor: theme.white,
     borderRadius: 15,
-    overflow: 'hidden',
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  infoLabel: {
+    fontSize: 16,
+    color: theme.text,
+    marginLeft: 10,
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.accent,
   },
   settingItem: {
+    backgroundColor: theme.white,
+    borderRadius: 15,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.background,
-  },
-  dangerItem: {
-    backgroundColor: '#FFF5F5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-  },
-  settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 15,
-  },
-  dangerIcon: {
-    backgroundColor: '#FFE5E5',
   },
   settingText: {
-    flex: 1,
-  },
-  settingTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.text,
-    marginBottom: 2,
+    fontWeight: '600',
+    marginLeft: 15,
   },
-  dangerText: {
-    color: theme.error,
-  },
-  settingSubtitle: {
-    fontSize: 14,
-    color: theme.text,
-    opacity: 0.7,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 20,
+  aboutCard: {
+    backgroundColor: theme.white,
+    borderRadius: 15,
     padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  footerText: {
+  aboutText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.accent,
+    marginBottom: 5,
+  },
+  aboutSubtext: {
     fontSize: 14,
     color: theme.text,
-    opacity: 0.7,
-    marginBottom: 5,
+    textAlign: 'center',
   },
 });
 

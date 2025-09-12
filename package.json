@@ -16,6 +16,7 @@
     "expo-linear-gradient": "~14.1.5",
     "expo-status-bar": "~2.2.3",
     "expo-vector-icons": "^10.0.1",
+    "prop-types": "^15.8.1",
     "react": "19.0.0",
     "react-native": "0.79.6",
     "react-native-gesture-handler": "~2.24.0",
