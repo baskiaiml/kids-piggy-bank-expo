@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
@@ -31,9 +32,10 @@ const AddKidScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showAgeDropdown, setShowAgeDropdown] = useState(false);
   const { addKid } = useKids();
 
-  const ageOptions = Array.from({ length: 21 }, (_, i) => i + 1);
+  const ageOptions = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
 
   const handleAdd = async () => {
     if (!name.trim()) {
@@ -69,6 +71,11 @@ const AddKidScreen = ({ navigation }) => {
 
   const handleBack = () => {
     navigation.goBack();
+  };
+
+  const handleAgeSelect = (selectedAge) => {
+    setAge(selectedAge.toString());
+    setShowAgeDropdown(false);
   };
 
   return (
@@ -119,34 +126,16 @@ const AddKidScreen = ({ navigation }) => {
             {/* Age Dropdown */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Age</Text>
-              <View style={styles.inputContainer}>
+              <TouchableOpacity
+                style={styles.dropdownContainer}
+                onPress={() => setShowAgeDropdown(true)}
+              >
                 <Icon name="cake" size={20} color={theme.accent} style={styles.inputIcon} />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.ageScrollView}
-                >
-                  {ageOptions.map((ageOption) => (
-                    <TouchableOpacity
-                      key={ageOption}
-                      style={[
-                        styles.ageOption,
-                        age === ageOption.toString() && styles.ageOptionSelected
-                      ]}
-                      onPress={() => setAge(ageOption.toString())}
-                    >
-                      <Text
-                        style={[
-                          styles.ageOptionText,
-                          age === ageOption.toString() && styles.ageOptionTextSelected
-                        ]}
-                      >
-                        {ageOption}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+                <Text style={[styles.dropdownText, !age && styles.placeholderText]}>
+                  {age ? `${age}` : 'Select age'}
+                </Text>
+                <Icon name="keyboard-arrow-down" size={24} color={theme.accent} />
+              </TouchableOpacity>
             </View>
 
             {/* Buttons */}
@@ -174,6 +163,53 @@ const AddKidScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Age Dropdown Modal */}
+      <Modal
+        visible={showAgeDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAgeDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAgeDropdown(false)}
+        >
+          <View style={styles.dropdownModal}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Select Age</Text>
+              <TouchableOpacity onPress={() => setShowAgeDropdown(false)}>
+                <Icon name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.ageList}>
+              {ageOptions.map((ageOption) => (
+                <TouchableOpacity
+                  key={ageOption}
+                  style={[
+                    styles.ageItem,
+                    age === ageOption.toString() && styles.ageItemSelected
+                  ]}
+                  onPress={() => handleAgeSelect(ageOption)}
+                >
+                  <Text
+                    style={[
+                      styles.ageItemText,
+                      age === ageOption.toString() && styles.ageItemTextSelected
+                    ]}
+                  >
+                    {ageOption} years old
+                  </Text>
+                  {age === ageOption.toString() && (
+                    <Icon name="check" size={20} color={theme.accent} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -257,29 +293,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.text,
   },
-  ageScrollView: {
-    flex: 1,
-  },
-  ageOption: {
+  dropdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.background,
+    borderRadius: 15,
     paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginRight: 10,
-    backgroundColor: theme.white,
-    borderRadius: 20,
+    height: 55,
     borderWidth: 1,
     borderColor: theme.background,
   },
-  ageOptionSelected: {
-    backgroundColor: theme.accent,
-    borderColor: theme.accent,
-  },
-  ageOptionText: {
-    fontSize: 14,
+  dropdownText: {
+    flex: 1,
+    fontSize: 16,
     color: theme.text,
-    fontWeight: '500',
   },
-  ageOptionTextSelected: {
-    color: theme.white,
+  placeholderText: {
+    color: theme.text,
+    opacity: 0.5,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -321,6 +352,58 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownModal: {
+    backgroundColor: theme.white,
+    borderRadius: 20,
+    width: '80%',
+    maxHeight: '60%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.background,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.text,
+  },
+  ageList: {
+    maxHeight: 300,
+  },
+  ageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.background,
+  },
+  ageItemSelected: {
+    backgroundColor: theme.background,
+  },
+  ageItemText: {
+    fontSize: 16,
+    color: theme.text,
+  },
+  ageItemTextSelected: {
+    color: theme.accent,
+    fontWeight: '600',
+  },
 });
 
-export default AddKidScreen; 
+export default AddKidScreen;
