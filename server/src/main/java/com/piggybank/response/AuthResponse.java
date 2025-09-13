@@ -1,4 +1,4 @@
-package com.piggybank.dto;
+package com.piggybank.response;
 
 public class AuthResponse {
     private boolean success;

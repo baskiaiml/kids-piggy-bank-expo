@@ -1,7 +1,7 @@
 package com.piggybank.service;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
@@ -11,14 +11,12 @@ import java.util.Map;
 
 @Service
 public class JwtTokenService {
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    
+    @Autowired
+    private SecretKey jwtSigningKey;
+    
     @Value("${jwt.expiration}")
     private long jwtExpiration;
-    
-    private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
-    }
     
     public String generateToken(Long userId, String phoneNumber) {
         Map<String, Object> claims = new HashMap<>();
@@ -36,7 +34,7 @@ public class JwtTokenService {
                 .setSubject(subject)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .signWith(jwtSigningKey, SignatureAlgorithm.HS512)
                 .compact();
     }
     
@@ -57,7 +55,7 @@ public class JwtTokenService {
     private Claims getAllClaimsFromToken(String token) {
         try {
             return Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+                    .setSigningKey(jwtSigningKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
