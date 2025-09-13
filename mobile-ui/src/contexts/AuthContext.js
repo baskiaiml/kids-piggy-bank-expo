@@ -2,8 +2,8 @@
 
 const AuthContext = createContext();
 
-// API Configuration
-const API_BASE_URL = 'http://localhost:8080/api';
+// API Configuration - Updated to match server port
+const API_BASE_URL = 'http://localhost:8085/api';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

@@ -3,6 +3,7 @@ package com.piggybank.service;
 import com.piggybank.entity.User;
 import com.piggybank.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -11,46 +12,50 @@ import java.util.Optional;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+    
     @Autowired
-    private PinEncryptionService pinEncryptionService;
-
+    private PasswordEncoder passwordEncoder;
+    
     public User registerUser(String phoneNumber, String pin) {
-        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            throw new IllegalArgumentException("Phone number cannot be null or empty");
-        }
-        if (!pinEncryptionService.isValidPinFormat(pin)) {
-            throw new IllegalArgumentException("PIN must be exactly 4 digits");
-        }
-        if (userRepository.existsByPhoneNumber(phoneNumber)) {
+        // Check if user already exists
+        if (userRepository.findByPhoneNumber(phoneNumber).isPresent()) {
             throw new IllegalArgumentException("User with this phone number already exists");
         }
-
-        String encryptedPin = pinEncryptionService.encryptPin(pin);
+        
+        // Validate phone number format (basic validation)
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+        
+        // Validate PIN format
+        if (pin == null || pin.length() != 4 || !pin.matches("\\d{4}")) {
+            throw new IllegalArgumentException("PIN must be exactly 4 digits");
+        }
+        
+        // Encrypt PIN using BCrypt
+        String encryptedPin = passwordEncoder.encode(pin);
+        
         User user = new User(phoneNumber, encryptedPin);
-        // Removed user.setCreatedAt(LocalDateTime.now()); - handled by AuditableEntity
         return userRepository.save(user);
     }
-
+    
     public User authenticateUser(String phoneNumber, String pin) {
-        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            throw new IllegalArgumentException("Phone number cannot be null or empty");
+        Optional<User> userOpt = userRepository.findByPhoneNumber(phoneNumber);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("Invalid phone number or PIN");
         }
-        if (!pinEncryptionService.isValidPinFormat(pin)) {
-            throw new IllegalArgumentException("Invalid PIN format");
+        
+        User user = userOpt.get();
+        
+        // Verify PIN using BCrypt
+        if (!passwordEncoder.matches(pin, user.getPinHash())) {
+            throw new IllegalArgumentException("Invalid phone number or PIN");
         }
-
-        Optional<User> userOptional = userRepository.findByPhoneNumber(phoneNumber);
-        if (userOptional.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
-        }
-
-        User user = userOptional.get();
-        if (!pinEncryptionService.verifyPin(pin, user.getPinHash())) {
-            throw new IllegalArgumentException("Invalid PIN");
-        }
-
+        
+        // Update last login time
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
+        
         return user;
     }
 }

@@ -55,24 +55,40 @@ public class JwtTokenService {
     }
     
     private Claims getAllClaimsFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-    
-    public Boolean isTokenExpired(String token) {
-        final Date expiration = getClaimFromToken(token, Claims::getExpiration);
-        return expiration.before(new Date());
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new RuntimeException("JWT token has expired", e);
+        } catch (UnsupportedJwtException e) {
+            throw new RuntimeException("JWT token is unsupported", e);
+        } catch (MalformedJwtException e) {
+            throw new RuntimeException("JWT token is malformed", e);
+        } catch (SignatureException e) {
+            throw new RuntimeException("JWT signature validation failed", e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("JWT token compact of handler are invalid", e);
+        }
     }
     
     public Boolean validateToken(String token, String phoneNumber) {
         try {
             final String tokenPhoneNumber = getPhoneNumberFromToken(token);
             return (tokenPhoneNumber.equals(phoneNumber) && !isTokenExpired(token));
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (Exception e) {
             return false;
         }
+    }
+    
+    private Boolean isTokenExpired(String token) {
+        final Date expiration = getExpirationDateFromToken(token);
+        return expiration.before(new Date());
+    }
+    
+    public Date getExpirationDateFromToken(String token) {
+        return getClaimFromToken(token, Claims::getExpiration);
     }
 }
