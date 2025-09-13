@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AsyncStorage, LocalAuthentication, SecureStore } from '../utils/mockAuth';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
+
+// API Configuration
+const API_BASE_URL = 'http://localhost:8080/api';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -15,9 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Session duration: 15 days in milliseconds
-  const SESSION_DURATION = 15 * 24 * 60 * 60 * 1000;
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
     checkAuthStatus();
@@ -27,124 +27,142 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Check if user is registered
-      const userData = await AsyncStorage.getItem('userData');
-      const lastLoginTime = await AsyncStorage.getItem('lastLoginTime');
+      // Check if token exists in storage
+      const storedToken = localStorage.getItem('authToken');
+      const storedUser = localStorage.getItem('userData');
       
-      if (userData && lastLoginTime) {
-        const timeSinceLastLogin = Date.now() - parseInt(lastLoginTime);
+      if (storedToken && storedUser) {
+        // Validate token with server
+        const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${storedToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
         
-        // If within 15 days, check if fingerprint is available
-        if (timeSinceLastLogin < SESSION_DURATION) {
-          const hasFingerprint = await LocalAuthentication.hasHardwareAsync();
-          const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-          
-          if (hasFingerprint && isEnrolled) {
-            // Try fingerprint authentication
-            const result = await LocalAuthentication.authenticateAsync({
-              promptMessage: 'Use your fingerprint to access your piggy bank',
-              fallbackLabel: 'Use PIN instead',
-            });
-            
-            if (result.success) {
-              setUser(JSON.parse(userData));
-              setIsAuthenticated(true);
-              await updateLastLoginTime();
-            }
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+            setIsAuthenticated(true);
+          } else {
+            // Token is invalid, clear storage
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userData');
           }
+        } else {
+          // Token validation failed, clear storage
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
         }
       }
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateLastLoginTime = async () => {
-    await AsyncStorage.setItem('lastLoginTime', Date.now().toString());
-  };
-
   const login = async (phoneNumber, pin) => {
     try {
-      const userData = await AsyncStorage.getItem('userData');
-      
-      if (userData) {
-        const user = JSON.parse(userData);
-        if (user.phoneNumber === phoneNumber && user.pin === pin) {
-          setUser(user);
-          setIsAuthenticated(true);
-          await updateLastLoginTime();
-          return { success: true };
-        } else {
-          return { success: false, error: 'Invalid phone number or PIN' };
-        }
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber,
+          pin,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setToken(data.token);
+        setUser({
+          id: data.userId,
+          phoneNumber: data.phoneNumber,
+        });
+        setIsAuthenticated(true);
+        
+        // Store in localStorage
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userData', JSON.stringify({
+          id: data.userId,
+          phoneNumber: data.phoneNumber,
+        }));
+        
+        return { success: true, message: data.message };
       } else {
-        return { success: false, error: 'User not registered' };
+        return { success: false, error: data.message };
       }
     } catch (error) {
-      return { success: false, error: 'Login failed' };
+      return { success: false, error: 'Network error. Please check your connection.' };
     }
   };
 
   const signup = async (phoneNumber, pin) => {
     try {
-      const userData = await AsyncStorage.getItem('userData');
-      
-      if (userData) {
-        const existingUser = JSON.parse(userData);
-        // If user already exists with same phone number, just log them in
-        if (existingUser.phoneNumber === phoneNumber) {
-          setUser(existingUser);
-          setIsAuthenticated(true);
-          await updateLastLoginTime();
-          return { success: true, message: 'Welcome back! Logged in successfully.' };
-        } else {
-          return { success: false, error: 'A different user is already registered on this device' };
-        }
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber,
+          pin,
+          confirmPin: pin, // For now, we'll use the same PIN
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setToken(data.token);
+        setUser({
+          id: data.userId,
+          phoneNumber: data.phoneNumber,
+        });
+        setIsAuthenticated(true);
+        
+        // Store in localStorage
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userData', JSON.stringify({
+          id: data.userId,
+          phoneNumber: data.phoneNumber,
+        }));
+        
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.message };
       }
-      
-      const newUser = {
-        phoneNumber,
-        pin,
-        createdAt: Date.now(),
-      };
-      
-      await AsyncStorage.setItem('userData', JSON.stringify(newUser));
-      await updateLastLoginTime();
-      
-      setUser(newUser);
-      setIsAuthenticated(true);
-      
-      return { success: true, message: 'Account created successfully!' };
     } catch (error) {
-      return { success: false, error: 'Signup failed' };
+      return { success: false, error: 'Network error. Please check your connection.' };
     }
   };
 
   const logout = async () => {
-    try {
-      setUser(null);
-      setIsAuthenticated(false);
-      await AsyncStorage.removeItem('lastLoginTime');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    setUser(null);
+    setToken(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
   };
 
   const value = {
     user,
-    isAuthenticated,
     isLoading,
+    isAuthenticated,
+    token,
     login,
     signup,
     logout,
-    checkAuthStatus,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}; 
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
