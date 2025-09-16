@@ -3,4 +3,4 @@ server/logs/kids-piggy-bank.log
 .gitignore
 server/logs/kids-piggy-bank-audit.log
 server/logs/kids-piggy-bank-error.log
-server/target/classes/application.properties
+server/target/
