@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -156,6 +157,37 @@ public class LoggingService {
 
         logger.info("API Request: {} {} - Status: {} - Duration: {}ms", method, endpoint, statusCode, duration);
 
+        MDC.clear();
+    }
+    
+    /**
+     * Log user settings operations
+     */
+    public void logUserSettingsUpdate(Long userId, String updatedBy, String action) {
+        MDC.put("userId", String.valueOf(userId));
+        MDC.put("updatedBy", updatedBy);
+        MDC.put("action", action);
+        MDC.put("timestamp", LocalDateTime.now().toString());
+        
+        logger.info("User Settings {}: User ID {} - Updated by {}", action, userId, updatedBy);
+        
+        MDC.clear();
+    }
+    
+    /**
+     * Log transaction operations
+     */
+    public void logTransaction(Long userId, Long kidId, String transactionType, BigDecimal amount, String createdBy) {
+        MDC.put("userId", String.valueOf(userId));
+        MDC.put("kidId", String.valueOf(kidId));
+        MDC.put("transactionType", transactionType);
+        MDC.put("amount", amount.toString());
+        MDC.put("createdBy", createdBy);
+        MDC.put("timestamp", LocalDateTime.now().toString());
+        
+        logger.info("Transaction {}: User ID {} - Kid ID {} - Amount {} - Created by {}", 
+                   transactionType, userId, kidId, amount, createdBy);
+        
         MDC.clear();
     }
 }

@@ -63,6 +63,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints - no authentication required
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/validate").permitAll()
+                        .requestMatchers("/api/settings/**", "/api/transactions/**").authenticated()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()

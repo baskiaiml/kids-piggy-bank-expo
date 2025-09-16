@@ -14,3 +14,10 @@ CREATE INDEX `idx_kids_aud_rev` ON `kids_aud` (`rev`);
 
 -- Index for revision timestamp queries
 CREATE INDEX `idx_revinfo_revtstmp` ON `revinfo` (`revtstmp`);
+
+-- Additional indexes for new tables
+CREATE INDEX `idx_user_settings_created_at` ON `user_settings` (`created_at`);
+CREATE INDEX `idx_transactions_withdrawal_component` ON `transactions` (`withdrawal_component`);
+CREATE INDEX `idx_transactions_created_at` ON `transactions` (`created_at`);
+CREATE INDEX `idx_user_settings_aud_rev` ON `user_settings_aud` (`rev`);
+CREATE INDEX `idx_transactions_aud_rev` ON `transactions_aud` (`rev`);

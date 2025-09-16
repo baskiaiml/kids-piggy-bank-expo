@@ -14,6 +14,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import AddKidScreen from "./src/screens/AddKidScreen";
+import KidDetailsScreen from "./src/screens/KidDetailsScreen";
 
 const theme = {
   primary: "#87CEEB",
@@ -69,10 +70,26 @@ const MainTabs = () => {
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: "Dashboard" }} />
-      <Tab.Screen name="Savings" component={SavingsScreen} options={{ title: "Savings" }} />
-      <Tab.Screen name="Goals" component={GoalsScreen} options={{ title: "Goals" }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ title: "Dashboard" }}
+      />
+      <Tab.Screen
+        name="Savings"
+        component={SavingsScreen}
+        options={{ title: "Savings" }}
+      />
+      <Tab.Screen
+        name="Goals"
+        component={GoalsScreen}
+        options={{ title: "Goals" }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: "Settings" }}
+      />
     </Tab.Navigator>
   );
 };
@@ -86,6 +103,7 @@ const MainStack = () => {
     >
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="AddKid" component={AddKidScreen} />
+      <Stack.Screen name="KidDetails" component={KidDetailsScreen} />
     </Stack.Navigator>
   );
 };
@@ -135,8 +153,8 @@ const App = () => {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: theme.background,
   },
 });

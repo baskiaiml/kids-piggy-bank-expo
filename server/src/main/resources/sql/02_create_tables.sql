@@ -72,3 +72,99 @@ CREATE TABLE IF NOT EXISTS `revinfo` (
     `revtstmp` BIGINT NULL,
     PRIMARY KEY (`rev`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create user_settings table
+CREATE TABLE IF NOT EXISTS `user_settings` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `charity_percentage` DECIMAL(5,2) NOT NULL,
+    `spend_percentage` DECIMAL(5,2) NOT NULL,
+    `savings_percentage` DECIMAL(5,2) NOT NULL,
+    `investment_percentage` DECIMAL(5,2) NOT NULL,
+    `savings_monthly_withdrawal_limit` INT NOT NULL,
+    `investment_monthly_withdrawal_limit` INT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    `created_by` VARCHAR(255) NOT NULL,
+    `updated_by` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_settings_user_id` (`user_id`),
+    CONSTRAINT `fk_user_settings_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create transactions table
+CREATE TABLE IF NOT EXISTS `transactions` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `kid_id` BIGINT NOT NULL,
+    `transaction_type` ENUM('DEPOSIT','WITHDRAWAL') NOT NULL,
+    `total_amount` DECIMAL(10,2) NOT NULL,
+    `charity_amount` DECIMAL(10,2) DEFAULT NULL,
+    `spend_amount` DECIMAL(10,2) DEFAULT NULL,
+    `savings_amount` DECIMAL(10,2) DEFAULT NULL,
+    `investment_amount` DECIMAL(10,2) DEFAULT NULL,
+    `charity_percentage` DECIMAL(5,2) DEFAULT NULL,
+    `spend_percentage` DECIMAL(5,2) DEFAULT NULL,
+    `savings_percentage` DECIMAL(5,2) DEFAULT NULL,
+    `investment_percentage` DECIMAL(5,2) DEFAULT NULL,
+    `withdrawal_component` ENUM('CHARITY','SPEND','SAVINGS','INVESTMENT') DEFAULT NULL,
+    `withdrawal_amount` DECIMAL(10,2) DEFAULT NULL,
+    `description` VARCHAR(500) DEFAULT NULL,
+    `transaction_date` DATETIME NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    `created_by` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_transactions_user_kid` (`user_id`, `kid_id`),
+    KEY `idx_transactions_date` (`transaction_date`),
+    KEY `idx_transactions_type` (`transaction_type`),
+    CONSTRAINT `fk_transactions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_transactions_kid_id` FOREIGN KEY (`kid_id`) REFERENCES `kids` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create audit tables for new entities
+-- User settings audit table
+CREATE TABLE IF NOT EXISTS `user_settings_aud` (
+    `id` BIGINT NOT NULL,
+    `rev` INT NOT NULL,
+    `revtype` TINYINT NULL,
+    `user_id` BIGINT NULL,
+    `charity_percentage` DECIMAL(5,2) NULL,
+    `spend_percentage` DECIMAL(5,2) NULL,
+    `savings_percentage` DECIMAL(5,2) NULL,
+    `investment_percentage` DECIMAL(5,2) NULL,
+    `savings_monthly_withdrawal_limit` INT NULL,
+    `investment_monthly_withdrawal_limit` INT NULL,
+    `created_at` DATETIME NULL,
+    `updated_at` DATETIME NULL,
+    `created_by` VARCHAR(255) NULL,
+    `updated_by` VARCHAR(255) NULL,
+    PRIMARY KEY (`id`, `rev`),
+    INDEX `idx_user_settings_aud_rev` (`rev`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Transactions audit table
+CREATE TABLE IF NOT EXISTS `transactions_aud` (
+    `id` BIGINT NOT NULL,
+    `rev` INT NOT NULL,
+    `revtype` TINYINT NULL,
+    `user_id` BIGINT NULL,
+    `kid_id` BIGINT NULL,
+    `transaction_type` ENUM('DEPOSIT','WITHDRAWAL') NULL,
+    `total_amount` DECIMAL(10,2) NULL,
+    `charity_amount` DECIMAL(10,2) NULL,
+    `spend_amount` DECIMAL(10,2) NULL,
+    `savings_amount` DECIMAL(10,2) NULL,
+    `investment_amount` DECIMAL(10,2) NULL,
+    `charity_percentage` DECIMAL(5,2) NULL,
+    `spend_percentage` DECIMAL(5,2) NULL,
+    `savings_percentage` DECIMAL(5,2) NULL,
+    `investment_percentage` DECIMAL(5,2) NULL,
+    `withdrawal_component` ENUM('CHARITY','SPEND','SAVINGS','INVESTMENT') NULL,
+    `withdrawal_amount` DECIMAL(10,2) NULL,
+    `description` VARCHAR(500) NULL,
+    `transaction_date` DATETIME NULL,
+    `created_at` DATETIME NULL,
+    `created_by` VARCHAR(255) NULL,
+    PRIMARY KEY (`id`, `rev`),
+    INDEX `idx_transactions_aud_rev` (`rev`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
