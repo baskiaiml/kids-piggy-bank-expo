@@ -11,13 +11,13 @@ import java.util.Map;
 
 @Service
 public class JwtTokenService {
-    
+
     @Autowired
     private SecretKey jwtSigningKey;
-    
+
     @Value("${jwt.expiration}")
     private long jwtExpiration;
-    
+
     public String generateToken(Long userId, String phoneNumber) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
@@ -25,7 +25,7 @@ public class JwtTokenService {
         claims.put("type", "access");
         return createToken(claims, phoneNumber);
     }
-    
+
     private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
@@ -37,21 +37,21 @@ public class JwtTokenService {
                 .signWith(jwtSigningKey, SignatureAlgorithm.HS512)
                 .compact();
     }
-    
+
     public String getPhoneNumberFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
     }
-    
+
     public Long getUserIdFromToken(String token) {
         Claims claims = getAllClaimsFromToken(token);
         return claims.get("userId", Long.class);
     }
-    
+
     public <T> T getClaimFromToken(String token, java.util.function.Function<Claims, T> claimsResolver) {
         final Claims claims = getAllClaimsFromToken(token);
         return claimsResolver.apply(claims);
     }
-    
+
     private Claims getAllClaimsFromToken(String token) {
         try {
             return Jwts.parserBuilder()
@@ -71,7 +71,7 @@ public class JwtTokenService {
             throw new RuntimeException("JWT token compact of handler are invalid", e);
         }
     }
-    
+
     public Boolean validateToken(String token, String phoneNumber) {
         try {
             final String tokenPhoneNumber = getPhoneNumberFromToken(token);
@@ -80,12 +80,12 @@ public class JwtTokenService {
             return false;
         }
     }
-    
+
     private Boolean isTokenExpired(String token) {
         final Date expiration = getExpirationDateFromToken(token);
         return expiration.before(new Date());
     }
-    
+
     public Date getExpirationDateFromToken(String token) {
         return getClaimFromToken(token, Claims::getExpiration);
     }

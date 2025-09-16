@@ -9,19 +9,23 @@ import java.util.Map;
 
 public class CustomAuditStrategy extends DefaultAuditStrategy {
     @Override
-    public void perform(Session session, String entityName, Configuration configuration, Object id, Object data, Object revision) {
+    public void perform(Session session, String entityName, Configuration configuration, Object id, Object data,
+            Object revision) {
         // Call the default behavior for versioning and auditing
         super.perform(session, entityName, configuration, id, data, revision);
 
-        // Now add custom fields (createdBy, lastModifiedBy, createdDate, lastModifiedDate)
+        // Now add custom fields (createdBy, lastModifiedBy, createdDate,
+        // lastModifiedDate)
         if (data instanceof Auditable) {
             Auditable auditableEntity = (Auditable) data;
 
-            // You may need to cast 'revision' if needed to your revision entity (e.g., 'RevisionInfoEntity')
+            // You may need to cast 'revision' if needed to your revision entity (e.g.,
+            // 'RevisionInfoEntity')
             // For now, assuming it is a generic object
             Map<String, Object> revisionMap = (Map<String, Object>) revision;
 
-            // Add createdBy, lastModifiedBy, createdDate, and lastModifiedDate to the revisionMap
+            // Add createdBy, lastModifiedBy, createdDate, and lastModifiedDate to the
+            // revisionMap
             revisionMap.put("createdBy", auditableEntity.getCreatedBy());
             revisionMap.put("lastModifiedBy", auditableEntity.getLastModifiedBy());
             revisionMap.put("createdDate", auditableEntity.getCreatedDate());
