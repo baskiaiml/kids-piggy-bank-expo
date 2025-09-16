@@ -1,15 +1,55 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "./AuthContext";
 
 const KidsContext = createContext();
 
-// API Configuration - Updated to match server port
-const API_BASE_URL = 'http://localhost:8085/api';
+// API Configuration - Smart configuration for web and mobile
+const getApiBaseUrl = () => {
+  // Check if running on web
+  if (Platform.OS === "web") {
+    return "http://localhost:8085/api";
+  }
+
+  // For mobile devices/emulators, use the Android emulator's host IP
+  // Android emulator maps 10.0.2.2 to the host machine's localhost
+  return "http://10.0.2.2:8085/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Storage helper that works for both web and mobile
+const storage = {
+  async getItem(key) {
+    if (Platform.OS === "web") {
+      return localStorage.getItem(key);
+    } else {
+      return await AsyncStorage.getItem(key);
+    }
+  },
+
+  async setItem(key, value) {
+    if (Platform.OS === "web") {
+      localStorage.setItem(key, value);
+    } else {
+      await AsyncStorage.setItem(key, value);
+    }
+  },
+
+  async removeItem(key) {
+    if (Platform.OS === "web") {
+      localStorage.removeItem(key);
+    } else {
+      await AsyncStorage.removeItem(key);
+    }
+  },
+};
 
 export const useKids = () => {
   const context = useContext(KidsContext);
   if (!context) {
-    throw new Error('useKids must be used within a KidsProvider');
+    throw new Error("useKids must be used within a KidsProvider");
   }
   return context;
 };
@@ -30,23 +70,23 @@ export const KidsProvider = ({ children }) => {
 
   const getAuthHeaders = () => {
     return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     };
   };
 
   const loadKids = async () => {
     try {
       setIsLoading(true);
-      
+
       if (!token) {
-        console.warn('No authentication token available');
+        console.warn("No authentication token available");
         setKids([]);
         return;
       }
 
       const response = await fetch(`${API_BASE_URL}/kids`, {
-        method: 'GET',
+        method: "GET",
         headers: getAuthHeaders(),
       });
 
@@ -55,15 +95,19 @@ export const KidsProvider = ({ children }) => {
         if (data.success) {
           setKids(data.kids || []);
         } else {
-          console.error('Failed to load kids:', data.message);
+          console.error("Failed to load kids:", data.message);
           setKids([]);
         }
       } else {
-        console.error('Failed to load kids:', response.status, response.statusText);
+        console.error(
+          "Failed to load kids:",
+          response.status,
+          response.statusText
+        );
         setKids([]);
       }
     } catch (error) {
-      console.error('Error loading kids:', error);
+      console.error("Error loading kids:", error);
       setKids([]);
     } finally {
       setIsLoading(false);
@@ -73,11 +117,11 @@ export const KidsProvider = ({ children }) => {
   const addKid = async (kidData) => {
     try {
       if (!token) {
-        return { success: false, error: 'Authentication required' };
+        return { success: false, error: "Authentication required" };
       }
 
       const response = await fetch(`${API_BASE_URL}/kids`, {
-        method: 'POST',
+        method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
           name: kidData.name,
@@ -92,22 +136,25 @@ export const KidsProvider = ({ children }) => {
         await loadKids();
         return { success: true, kid: data.kid };
       } else {
-        return { success: false, error: data.message || 'Failed to add kid' };
+        return { success: false, error: data.message || "Failed to add kid" };
       }
     } catch (error) {
-      console.error('Error adding kid:', error);
-      return { success: false, error: 'Network error. Please check your connection.' };
+      console.error("Error adding kid:", error);
+      return {
+        success: false,
+        error: "Network error. Please check your connection.",
+      };
     }
   };
 
   const updateKid = async (kidId, updates) => {
     try {
       if (!token) {
-        return { success: false, error: 'Authentication required' };
+        return { success: false, error: "Authentication required" };
       }
 
       const response = await fetch(`${API_BASE_URL}/kids/${kidId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(updates),
       });
@@ -119,22 +166,28 @@ export const KidsProvider = ({ children }) => {
         await loadKids();
         return { success: true };
       } else {
-        return { success: false, error: data.message || 'Failed to update kid' };
+        return {
+          success: false,
+          error: data.message || "Failed to update kid",
+        };
       }
     } catch (error) {
-      console.error('Error updating kid:', error);
-      return { success: false, error: 'Network error. Please check your connection.' };
+      console.error("Error updating kid:", error);
+      return {
+        success: false,
+        error: "Network error. Please check your connection.",
+      };
     }
   };
 
   const deleteKid = async (kidId) => {
     try {
       if (!token) {
-        return { success: false, error: 'Authentication required' };
+        return { success: false, error: "Authentication required" };
       }
 
       const response = await fetch(`${API_BASE_URL}/kids/${kidId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: getAuthHeaders(),
       });
 
@@ -145,16 +198,22 @@ export const KidsProvider = ({ children }) => {
         await loadKids();
         return { success: true };
       } else {
-        return { success: false, error: data.message || 'Failed to delete kid' };
+        return {
+          success: false,
+          error: data.message || "Failed to delete kid",
+        };
       }
     } catch (error) {
-      console.error('Error deleting kid:', error);
-      return { success: false, error: 'Network error. Please check your connection.' };
+      console.error("Error deleting kid:", error);
+      return {
+        success: false,
+        error: "Network error. Please check your connection.",
+      };
     }
   };
 
   const getKidById = (kidId) => {
-    return kids.find(kid => kid.id === kidId);
+    return kids.find((kid) => kid.id === kidId);
   };
 
   const value = {
@@ -167,9 +226,5 @@ export const KidsProvider = ({ children }) => {
     loadKids,
   };
 
-  return (
-    <KidsContext.Provider value={value}>
-      {children}
-    </KidsContext.Provider>
-  );
+  return <KidsContext.Provider value={value}>{children}</KidsContext.Provider>;
 };

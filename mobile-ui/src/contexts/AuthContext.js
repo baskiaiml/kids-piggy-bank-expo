@@ -1,14 +1,54 @@
-﻿import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from "react";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AuthContext = createContext();
 
-// API Configuration - Updated to match server port
-const API_BASE_URL = 'http://localhost:8085/api';
+// API Configuration - Smart configuration for web and mobile
+const getApiBaseUrl = () => {
+  // Check if running on web
+  if (Platform.OS === "web") {
+    return "http://localhost:8085/api";
+  }
+
+  // For mobile devices/emulators, use the Android emulator's host IP
+  // Android emulator maps 10.0.2.2 to the host machine's localhost
+  return "http://10.0.2.2:8085/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Storage helper that works for both web and mobile
+const storage = {
+  async getItem(key) {
+    if (Platform.OS === "web") {
+      return localStorage.getItem(key);
+    } else {
+      return await AsyncStorage.getItem(key);
+    }
+  },
+
+  async setItem(key, value) {
+    if (Platform.OS === "web") {
+      await storage.setItem(key, value);
+    } else {
+      await AsyncStorage.setItem(key, value);
+    }
+  },
+
+  async removeItem(key) {
+    if (Platform.OS === "web") {
+      await storage.removeItem(key);
+    } else {
+      await AsyncStorage.removeItem(key);
+    }
+  },
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -26,42 +66,64 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
-      
+
       // Check if token exists in storage
-      const storedToken = localStorage.getItem('authToken');
-      const storedUser = localStorage.getItem('userData');
-      
+      const storedToken = await storage.getItem("authToken");
+      const storedUser = await storage.getItem("userData");
+
       if (storedToken && storedUser) {
-        // Validate token with server
-        const response = await fetch(`${API_BASE_URL}/auth/validate`, {
-          method: 'GET',
+        console.log("🔍 CHECKING AUTH STATUS:", {
+          url: `${API_BASE_URL}/auth/validate`,
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${storedToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${storedToken}`,
+            "Content-Type": "application/json",
           },
         });
-        
+
+        // Validate token with server
+        const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        console.log("📡 AUTH VALIDATION RESPONSE:", {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+        });
+
         if (response.ok) {
           const data = await response.json();
+          console.log("📄 AUTH VALIDATION DATA:", data);
+
           if (data.success) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
             setIsAuthenticated(true);
+            console.log("✅ Auth validation successful");
           } else {
             // Token is invalid, clear storage
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userData');
+            console.log("❌ Token validation failed, clearing storage");
+            await storage.removeItem("authToken");
+            await storage.removeItem("userData");
           }
         } else {
           // Token validation failed, clear storage
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('userData');
+          console.log("❌ Auth validation response not OK, clearing storage");
+          await storage.removeItem("authToken");
+          await storage.removeItem("userData");
         }
+      } else {
+        console.log("ℹ️ No stored token found, user needs to login");
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
+      console.error("❌ Auth check failed:", error);
+      // Don't clear storage on network errors - just log the error
+      // This prevents the "Network error" dialog from appearing
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +132,9 @@ export const AuthProvider = ({ children }) => {
   const login = async (phoneNumber, pin) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           phoneNumber,
@@ -89,29 +151,35 @@ export const AuthProvider = ({ children }) => {
           phoneNumber: data.phoneNumber,
         });
         setIsAuthenticated(true);
-        
+
         // Store in localStorage
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userData', JSON.stringify({
-          id: data.userId,
-          phoneNumber: data.phoneNumber,
-        }));
-        
+        await storage.setItem("authToken", data.token);
+        await storage.setItem(
+          "userData",
+          JSON.stringify({
+            id: data.userId,
+            phoneNumber: data.phoneNumber,
+          })
+        );
+
         return { success: true, message: data.message };
       } else {
         return { success: false, error: data.message };
       }
     } catch (error) {
-      return { success: false, error: 'Network error. Please check your connection.' };
+      return {
+        success: false,
+        error: "Network error. Please check your connection.",
+      };
     }
   };
 
   const signup = async (phoneNumber, pin) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           phoneNumber,
@@ -129,20 +197,26 @@ export const AuthProvider = ({ children }) => {
           phoneNumber: data.phoneNumber,
         });
         setIsAuthenticated(true);
-        
+
         // Store in localStorage
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userData', JSON.stringify({
-          id: data.userId,
-          phoneNumber: data.phoneNumber,
-        }));
-        
+        await storage.setItem("authToken", data.token);
+        await storage.setItem(
+          "userData",
+          JSON.stringify({
+            id: data.userId,
+            phoneNumber: data.phoneNumber,
+          })
+        );
+
         return { success: true, message: data.message };
       } else {
         return { success: false, error: data.message };
       }
     } catch (error) {
-      return { success: false, error: 'Network error. Please check your connection.' };
+      return {
+        success: false,
+        error: "Network error. Please check your connection.",
+      };
     }
   };
 
@@ -150,8 +224,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
+    await storage.removeItem("authToken");
+    await storage.removeItem("userData");
   };
 
   const value = {
