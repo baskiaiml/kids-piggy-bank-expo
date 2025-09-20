@@ -159,7 +159,7 @@ public class LoggingService {
 
         MDC.clear();
     }
-    
+
     /**
      * Log user settings operations
      */
@@ -168,12 +168,12 @@ public class LoggingService {
         MDC.put("updatedBy", updatedBy);
         MDC.put("action", action);
         MDC.put("timestamp", LocalDateTime.now().toString());
-        
+
         logger.info("User Settings {}: User ID {} - Updated by {}", action, userId, updatedBy);
-        
+
         MDC.clear();
     }
-    
+
     /**
      * Log transaction operations
      */
@@ -184,10 +184,26 @@ public class LoggingService {
         MDC.put("amount", amount.toString());
         MDC.put("createdBy", createdBy);
         MDC.put("timestamp", LocalDateTime.now().toString());
-        
-        logger.info("Transaction {}: User ID {} - Kid ID {} - Amount {} - Created by {}", 
-                   transactionType, userId, kidId, amount, createdBy);
-        
+
+        logger.info("Transaction {}: User ID {} - Kid ID {} - Amount {} - Created by {}",
+                transactionType, userId, kidId, amount, createdBy);
+
+        MDC.clear();
+    }
+
+    /**
+     * Log kid balance operations
+     */
+    public void logKidBalanceUpdate(Long userId, Long kidId, String action, String updatedBy) {
+        MDC.put("userId", String.valueOf(userId));
+        MDC.put("kidId", String.valueOf(kidId));
+        MDC.put("action", action);
+        MDC.put("updatedBy", updatedBy);
+        MDC.put("timestamp", LocalDateTime.now().toString());
+
+        logger.info("Kid Balance Update: User ID {} - Kid ID {} - Action: {} - Updated by {}",
+                userId, kidId, action, updatedBy);
+
         MDC.clear();
     }
 }
