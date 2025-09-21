@@ -15,6 +15,7 @@ import SignupScreen from "./src/screens/SignupScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import AddKidScreen from "./src/screens/AddKidScreen";
 import KidDetailsScreen from "./src/screens/KidDetailsScreen";
+import AllTransactionsScreen from "./src/screens/AllTransactionsScreen";
 
 const theme = {
   primary: "#87CEEB",
@@ -104,6 +105,7 @@ const MainStack = () => {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="AddKid" component={AddKidScreen} />
       <Stack.Screen name="KidDetails" component={KidDetailsScreen} />
+      <Stack.Screen name="AllTransactions" component={AllTransactionsScreen} />
     </Stack.Navigator>
   );
 };

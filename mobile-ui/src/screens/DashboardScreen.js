@@ -49,6 +49,7 @@ const DashboardScreen = ({ navigation }) => {
   const loadBalances = async () => {
     try {
       setLoadingBalances(true);
+      console.log("Loading balances for kids:", kids.length);
 
       // Load total balances
       const totalsResponse = await fetch(`${getApiBaseUrl()}/balances/totals`, {
@@ -60,14 +61,19 @@ const DashboardScreen = ({ navigation }) => {
       });
 
       const totalsData = await totalsResponse.json();
+      console.log("Totals response:", totalsData);
       if (totalsData.success) {
-        setTotalBalances({
+        const newTotals = {
           charity: totalsData.data.charityBalance || 0,
           spend: totalsData.data.spendBalance || 0,
           savings: totalsData.data.savingsBalance || 0,
           investment: totalsData.data.investmentBalance || 0,
           total: totalsData.data.totalBalance || 0,
-        });
+        };
+        console.log("Setting total balances:", newTotals);
+        setTotalBalances(newTotals);
+      } else {
+        console.error("Failed to get totals:", totalsData.message);
       }
 
       // Load individual kid balances
@@ -80,8 +86,16 @@ const DashboardScreen = ({ navigation }) => {
       });
 
       const kidsData = await kidsResponse.json();
+      console.log("Kids balances response:", kidsData);
       if (kidsData.success) {
         setKidsWithBalances(kidsData.data);
+        console.log("Set kids with balances:", kidsData.data);
+        console.log(
+          "Total kids:",
+          kids.length,
+          "Kids with balances:",
+          kidsData.data.length
+        );
       }
     } catch (error) {
       console.error("Error loading balances:", error);
@@ -102,10 +116,16 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const handleKidPress = (kid) => {
-    // Find the kid with balance data
-    const kidWithBalance =
-      kidsWithBalances.find((k) => k.kidId === kid.id) || kid;
-    navigation.navigate("KidDetails", { kid: kidWithBalance });
+    // Ensure the kid object has the correct structure for KidDetailsScreen
+    const kidForDetails = {
+      id: kid.kidId || kid.id, // Use kidId if available (from balance data), otherwise use id
+      name: kid.kidName || kid.name,
+      age: kid.kidAge || kid.age,
+      // Include any other properties that might be needed
+      ...kid,
+    };
+    console.log("Navigating to KidDetails with kid:", kidForDetails);
+    navigation.navigate("KidDetails", { kid: kidForDetails });
   };
 
   const handleLogout = () => {
@@ -226,87 +246,136 @@ const DashboardScreen = ({ navigation }) => {
             </View>
           ) : (
             <View style={styles.kidsGrid}>
-              {kidsWithBalances.map((kidBalance) => (
-                <TouchableOpacity
-                  key={kidBalance.kidId}
-                  style={styles.kidCard}
-                  onPress={() => handleKidPress(kidBalance)}
-                >
-                  <View style={styles.kidCardHeader}>
-                    <View style={styles.kidAvatar}>
-                      <Icon name="child-care" size={30} color={theme.accent} />
-                    </View>
-                    <View style={styles.kidInfo}>
-                      <Text style={styles.kidName}>{kidBalance.kidName}</Text>
-                      <Text style={styles.kidAge}>
-                        {kidBalance.kidAge} years old
-                      </Text>
-                    </View>
-                  </View>
+              {kids.map((kid) => {
+                // Find balance data for this kid if it exists
+                const kidBalance = kidsWithBalances.find(
+                  (k) => k.kidId === kid.id
+                );
+                const displayData = kidBalance || kid;
 
-                  <View style={styles.kidTotalBalance}>
-                    <Text style={styles.kidTotalLabel}>Total Balance</Text>
-                    <Text style={styles.kidTotalValue}>
-                      {formatCurrency(kidBalance.totalBalance)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.kidComponents}>
-                    <View style={styles.kidComponentRow}>
-                      <View
-                        style={[
-                          styles.kidComponentItem,
-                          { backgroundColor: "#FF6B6B" },
-                        ]}
-                      >
-                        <Text style={styles.kidComponentLabel}>Charity</Text>
-                        <Text style={styles.kidComponentValue}>
-                          {formatCurrency(kidBalance.charityBalance)}
-                        </Text>
+                return (
+                  <TouchableOpacity
+                    key={displayData.kidId || displayData.id}
+                    style={styles.kidCard}
+                    onPress={() => handleKidPress(displayData)}
+                  >
+                    <View style={styles.kidCardHeader}>
+                      <View style={styles.kidAvatar}>
+                        <Icon
+                          name="child-care"
+                          size={30}
+                          color={theme.accent}
+                        />
                       </View>
-                      <View
-                        style={[
-                          styles.kidComponentItem,
-                          { backgroundColor: "#4ECDC4" },
-                        ]}
-                      >
-                        <Text style={styles.kidComponentLabel}>Spend</Text>
-                        <Text style={styles.kidComponentValue}>
-                          {formatCurrency(kidBalance.spendBalance)}
+                      <View style={styles.kidInfo}>
+                        <Text style={styles.kidName}>
+                          {displayData.kidName || displayData.name}
+                        </Text>
+                        <Text style={styles.kidAge}>
+                          {displayData.kidAge || displayData.age} years old
                         </Text>
                       </View>
                     </View>
-                    <View style={styles.kidComponentRow}>
-                      <View
-                        style={[
-                          styles.kidComponentItem,
-                          { backgroundColor: "#45B7D1" },
-                        ]}
-                      >
-                        <Text style={styles.kidComponentLabel}>Savings</Text>
-                        <Text style={styles.kidComponentValue}>
-                          {formatCurrency(kidBalance.savingsBalance)}
-                        </Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.kidComponentItem,
-                          { backgroundColor: "#96CEB4" },
-                        ]}
-                      >
-                        <Text style={styles.kidComponentLabel}>Investment</Text>
-                        <Text style={styles.kidComponentValue}>
-                          {formatCurrency(kidBalance.investmentBalance)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
 
-                  <View style={styles.kidCardFooter}>
-                    <Icon name="chevron-right" size={20} color={theme.accent} />
-                  </View>
-                </TouchableOpacity>
-              ))}
+                    {kidBalance ? (
+                      <>
+                        <View style={styles.kidTotalBalance}>
+                          <Text style={styles.kidTotalLabel}>
+                            Total Balance
+                          </Text>
+                          <Text style={styles.kidTotalValue}>
+                            {formatCurrency(displayData.totalBalance || 0)}
+                          </Text>
+                        </View>
+
+                        <View style={styles.kidComponents}>
+                          <View style={styles.kidComponentRow}>
+                            <View
+                              style={[
+                                styles.kidComponentItem,
+                                { backgroundColor: "#FF6B6B" },
+                              ]}
+                            >
+                              <Text style={styles.kidComponentLabel}>
+                                Charity
+                              </Text>
+                              <Text style={styles.kidComponentValue}>
+                                {formatCurrency(
+                                  displayData.charityBalance || 0
+                                )}
+                              </Text>
+                            </View>
+                            <View
+                              style={[
+                                styles.kidComponentItem,
+                                { backgroundColor: "#4ECDC4" },
+                              ]}
+                            >
+                              <Text style={styles.kidComponentLabel}>
+                                Spend
+                              </Text>
+                              <Text style={styles.kidComponentValue}>
+                                {formatCurrency(displayData.spendBalance || 0)}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.kidComponentRow}>
+                            <View
+                              style={[
+                                styles.kidComponentItem,
+                                { backgroundColor: "#45B7D1" },
+                              ]}
+                            >
+                              <Text style={styles.kidComponentLabel}>
+                                Savings
+                              </Text>
+                              <Text style={styles.kidComponentValue}>
+                                {formatCurrency(
+                                  displayData.savingsBalance || 0
+                                )}
+                              </Text>
+                            </View>
+                            <View
+                              style={[
+                                styles.kidComponentItem,
+                                { backgroundColor: "#96CEB4" },
+                              ]}
+                            >
+                              <Text style={styles.kidComponentLabel}>
+                                Investment
+                              </Text>
+                              <Text style={styles.kidComponentValue}>
+                                {formatCurrency(
+                                  displayData.investmentBalance || 0
+                                )}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      </>
+                    ) : (
+                      <View style={styles.kidStats}>
+                        <View style={styles.kidStatItem}>
+                          <Text style={styles.kidStatValue}>₹0.00</Text>
+                          <Text style={styles.kidStatLabel}>Total Balance</Text>
+                        </View>
+                        <View style={styles.kidStatItem}>
+                          <Text style={styles.kidStatValue}>Loading...</Text>
+                          <Text style={styles.kidStatLabel}>Balances</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={styles.kidCardFooter}>
+                      <Icon
+                        name="chevron-right"
+                        size={20}
+                        color={theme.accent}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
@@ -557,6 +626,24 @@ const styles = StyleSheet.create({
   },
   kidCardFooter: {
     alignItems: "flex-end",
+  },
+  kidStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  kidStatItem: {
+    alignItems: "center",
+  },
+  kidStatValue: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: theme.accent,
+  },
+  kidStatLabel: {
+    fontSize: 10,
+    color: theme.text,
+    opacity: 0.7,
   },
   loadingText: {
     marginTop: 10,

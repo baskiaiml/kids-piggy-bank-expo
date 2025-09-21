@@ -139,15 +139,19 @@ public class KidBalanceService {
      */
     @Transactional(readOnly = true)
     public List<KidBalanceDTO> getAllKidBalances(Long userId) {
-        List<KidBalance> balances = kidBalanceRepository.findByUserIdOrderByLastUpdatedDesc(userId);
+        // Get all kids for the user
+        List<Kid> allKids = kidRepository.findByUserIdOrderByCreatedDateDesc(userId);
         List<KidBalanceDTO> balanceDTOs = new ArrayList<>();
 
-        for (KidBalance balance : balances) {
-            Optional<Kid> kidOpt = kidRepository.findByIdAndUserId(balance.getKidId(), userId);
-            if (kidOpt.isPresent()) {
-                Kid kid = kidOpt.get();
+        for (Kid kid : allKids) {
+            // Try to find balance record for this kid
+            Optional<KidBalance> balanceOpt = kidBalanceRepository.findByUserIdAndKidId(userId, kid.getId());
+
+            if (balanceOpt.isPresent()) {
+                // Kid has balance record
+                KidBalance balance = balanceOpt.get();
                 balanceDTOs.add(new KidBalanceDTO(
-                        balance.getKidId(),
+                        kid.getId(),
                         kid.getName(),
                         kid.getAge(),
                         balance.getCharityBalance(),
@@ -156,6 +160,18 @@ public class KidBalanceService {
                         balance.getInvestmentBalance(),
                         balance.getTotalBalance(),
                         balance.getLastUpdated()));
+            } else {
+                // Kid doesn't have balance record yet - return zero balances
+                balanceDTOs.add(new KidBalanceDTO(
+                        kid.getId(),
+                        kid.getName(),
+                        kid.getAge(),
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        null));
             }
         }
 
@@ -167,13 +183,23 @@ public class KidBalanceService {
      */
     @Transactional(readOnly = true)
     public KidBalanceDTO getTotalBalancesForUser(Long userId) {
-        Object[] totals = kidBalanceRepository.getTotalBalancesForUser(userId);
-
-        BigDecimal totalCharity = (BigDecimal) totals[0];
-        BigDecimal totalSpend = (BigDecimal) totals[1];
-        BigDecimal totalSavings = (BigDecimal) totals[2];
-        BigDecimal totalInvestment = (BigDecimal) totals[3];
-        BigDecimal grandTotal = (BigDecimal) totals[4];
+        // Get all kid balances (including kids with zero balances)
+        List<KidBalanceDTO> allKidBalances = getAllKidBalances(userId);
+        
+        BigDecimal totalCharity = BigDecimal.ZERO;
+        BigDecimal totalSpend = BigDecimal.ZERO;
+        BigDecimal totalSavings = BigDecimal.ZERO;
+        BigDecimal totalInvestment = BigDecimal.ZERO;
+        
+        // Sum up all balances
+        for (KidBalanceDTO kidBalance : allKidBalances) {
+            totalCharity = totalCharity.add(kidBalance.getCharityBalance());
+            totalSpend = totalSpend.add(kidBalance.getSpendBalance());
+            totalSavings = totalSavings.add(kidBalance.getSavingsBalance());
+            totalInvestment = totalInvestment.add(kidBalance.getInvestmentBalance());
+        }
+        
+        BigDecimal grandTotal = totalCharity.add(totalSpend).add(totalSavings).add(totalInvestment);
 
         return new KidBalanceDTO(
                 null, // No specific kid ID for totals

@@ -14,4 +14,6 @@ public interface KidRepository extends JpaRepository<Kid, Long> {
     List<Kid> findByUserId(Long userId);
 
     Optional<Kid> findByIdAndUserId(Long kidId, Long userId);
+
+    List<Kid> findByUserIdOrderByCreatedDateDesc(Long userId);
 } 

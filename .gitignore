@@ -4,3 +4,4 @@ server/logs/kids-piggy-bank.log
 server/logs/kids-piggy-bank-audit.log
 server/logs/kids-piggy-bank-error.log
 server/target/
+server/logs/

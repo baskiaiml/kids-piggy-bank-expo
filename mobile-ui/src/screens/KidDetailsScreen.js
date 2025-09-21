@@ -16,6 +16,8 @@ import { Platform } from "react-native";
 const KidDetailsScreen = ({ route, navigation }) => {
   const { kid } = route.params;
   const { token } = useAuth();
+
+  console.log("KidDetailsScreen received kid:", kid);
   const [loading, setLoading] = useState(false);
   const [kidDetails, setKidDetails] = useState(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -251,30 +253,47 @@ const KidDetailsScreen = ({ route, navigation }) => {
       </View>
 
       <View style={styles.transactionsSection}>
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          {kidDetails.recentTransactions && kidDetails.recentTransactions.length > 5 && (
+            <TouchableOpacity 
+              style={styles.viewAllButton}
+              onPress={() => navigation.navigate('AllTransactions', { kid })}
+            >
+              <Text style={styles.viewAllButtonText}>View All</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         {kidDetails.recentTransactions &&
         kidDetails.recentTransactions.length > 0 ? (
-          kidDetails.recentTransactions.map((transaction, index) => (
-            <View key={index} style={styles.transactionItem}>
-              <View style={styles.transactionHeader}>
-                <Text style={styles.transactionType}>
-                  {transaction.transactionType}
+          kidDetails.recentTransactions.slice(0, 5).map((transaction, index) => {
+            const isDeposit = transaction.transactionType === 'DEPOSIT';
+            const transactionStyle = isDeposit ? styles.depositTransaction : styles.withdrawalTransaction;
+            const typeStyle = isDeposit ? styles.depositType : styles.withdrawalType;
+            const amountStyle = isDeposit ? styles.depositAmount : styles.withdrawalAmount;
+            
+            return (
+              <View key={index} style={[styles.transactionItem, transactionStyle]}>
+                <View style={styles.transactionHeader}>
+                  <Text style={typeStyle}>
+                    {transaction.transactionType}
+                  </Text>
+                  <Text style={amountStyle}>
+                    {isDeposit ? '+' : '-'}{formatCurrency(transaction.amount)}
+                  </Text>
+                </View>
+                <Text style={styles.transactionComponent}>
+                  Component: {transaction.component}
                 </Text>
-                <Text style={styles.transactionAmount}>
-                  {formatCurrency(transaction.amount)}
+                <Text style={styles.transactionDescription}>
+                  {transaction.description}
+                </Text>
+                <Text style={styles.transactionDate}>
+                  {formatDate(transaction.transactionDate)}
                 </Text>
               </View>
-              <Text style={styles.transactionComponent}>
-                Component: {transaction.component}
-              </Text>
-              <Text style={styles.transactionDescription}>
-                {transaction.description}
-              </Text>
-              <Text style={styles.transactionDate}>
-                {formatDate(transaction.transactionDate)}
-              </Text>
-            </View>
-          ))
+            );
+          })
         ) : (
           <Text style={styles.noTransactionsText}>No transactions yet</Text>
         )}
@@ -500,11 +519,27 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#2C3E50",
-    marginBottom: 16,
+  },
+  viewAllButton: {
+    backgroundColor: "#4ECDC4",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  viewAllButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
   },
   componentRow: {
     flexDirection: "row",
@@ -582,6 +617,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#28A745",
+  },
+  // Color-coded transaction styles
+  depositTransaction: {
+    backgroundColor: "#F8FFF8",
+    borderLeftWidth: 4,
+    borderLeftColor: "#28A745",
+    borderRadius: 8,
+    marginVertical: 4,
+    paddingHorizontal: 12,
+  },
+  withdrawalTransaction: {
+    backgroundColor: "#FFF8F8",
+    borderLeftWidth: 4,
+    borderLeftColor: "#DC3545",
+    borderRadius: 8,
+    marginVertical: 4,
+    paddingHorizontal: 12,
+  },
+  depositType: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#28A745",
+  },
+  withdrawalType: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#DC3545",
+  },
+  depositAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#28A745",
+  },
+  withdrawalAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#DC3545",
   },
   transactionComponent: {
     fontSize: 14,

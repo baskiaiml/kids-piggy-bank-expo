@@ -171,13 +171,26 @@ public class TransactionService {
                     ? transaction.getTotalAmount()
                     : transaction.getWithdrawalAmount();
 
-            recentTransactions.add(new KidDetailsDTO.TransactionSummaryDTO(
+            KidDetailsDTO.TransactionSummaryDTO transactionSummary = new KidDetailsDTO.TransactionSummaryDTO(
                     transaction.getId(),
                     transaction.getTransactionType().toString(),
                     amount,
                     component,
                     transaction.getDescription(),
-                    transaction.getTransactionDate()));
+                    transaction.getTransactionDate());
+
+            // Set component amounts for deposits
+            if (transaction.getTransactionType() == Transaction.TransactionType.DEPOSIT) {
+                transactionSummary.setCharityAmount(transaction.getCharityAmount());
+                transactionSummary.setSpendAmount(transaction.getSpendAmount());
+                transactionSummary.setSavingsAmount(transaction.getSavingsAmount());
+                transactionSummary.setInvestmentAmount(transaction.getInvestmentAmount());
+            } else {
+                // Set withdrawal component for withdrawals
+                transactionSummary.setWithdrawalComponent(transaction.getWithdrawalComponent().toString());
+            }
+
+            recentTransactions.add(transactionSummary);
         }
 
         kidDetails.setRecentTransactions(recentTransactions);
