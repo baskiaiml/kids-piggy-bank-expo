@@ -159,7 +159,9 @@ const DashboardScreen = ({ navigation }) => {
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.welcomeText}>Welcome back!</Text>
-              <Text style={styles.userText}>{user?.phoneNumber}</Text>
+              <Text style={styles.userText}>
+                {user?.name || user?.phoneNumber}
+              </Text>
             </View>
             <View style={styles.headerButtons}>
               <TouchableOpacity

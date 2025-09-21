@@ -174,7 +174,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (phoneNumber, pin) => {
+  const signup = async (phoneNumber, name, pin) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
@@ -183,6 +183,7 @@ export const AuthProvider = ({ children }) => {
         },
         body: JSON.stringify({
           phoneNumber,
+          name,
           pin,
           confirmPin: pin, // For now, we'll use the same PIN
         }),
@@ -195,6 +196,7 @@ export const AuthProvider = ({ children }) => {
         setUser({
           id: data.userId,
           phoneNumber: data.phoneNumber,
+          name: data.name,
         });
         setIsAuthenticated(true);
 
@@ -205,6 +207,7 @@ export const AuthProvider = ({ children }) => {
           JSON.stringify({
             id: data.userId,
             phoneNumber: data.phoneNumber,
+            name: data.name,
           })
         );
 

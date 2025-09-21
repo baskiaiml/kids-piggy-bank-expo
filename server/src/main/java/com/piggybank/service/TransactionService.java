@@ -199,6 +199,55 @@ public class TransactionService {
     }
 
     /**
+     * Get all transactions for a kid with component details
+     */
+    @Transactional(readOnly = true)
+    public List<KidDetailsDTO.TransactionSummaryDTO> getAllTransactionsForKid(Long userId, Long kidId) {
+        // Verify kid belongs to user
+        Optional<Kid> kidOpt = kidRepository.findByIdAndUserId(kidId, userId);
+        if (kidOpt.isEmpty()) {
+            throw new IllegalArgumentException("Kid not found");
+        }
+
+        // Get all transactions for this kid
+        List<Transaction> transactions = transactionRepository.findByUserIdAndKidIdOrderByTransactionDateDesc(userId,
+                kidId);
+
+        List<KidDetailsDTO.TransactionSummaryDTO> allTransactions = new ArrayList<>();
+        for (Transaction transaction : transactions) {
+            String component = transaction.getTransactionType() == Transaction.TransactionType.DEPOSIT ? "ALL"
+                    : transaction.getWithdrawalComponent().toString();
+
+            BigDecimal amount = transaction.getTransactionType() == Transaction.TransactionType.DEPOSIT
+                    ? transaction.getTotalAmount()
+                    : transaction.getWithdrawalAmount();
+
+            KidDetailsDTO.TransactionSummaryDTO transactionSummary = new KidDetailsDTO.TransactionSummaryDTO(
+                    transaction.getId(),
+                    transaction.getTransactionType().toString(),
+                    amount,
+                    component,
+                    transaction.getDescription(),
+                    transaction.getTransactionDate());
+
+            // Set component amounts for deposits
+            if (transaction.getTransactionType() == Transaction.TransactionType.DEPOSIT) {
+                transactionSummary.setCharityAmount(transaction.getCharityAmount());
+                transactionSummary.setSpendAmount(transaction.getSpendAmount());
+                transactionSummary.setSavingsAmount(transaction.getSavingsAmount());
+                transactionSummary.setInvestmentAmount(transaction.getInvestmentAmount());
+            } else {
+                // Set withdrawal component for withdrawals
+                transactionSummary.setWithdrawalComponent(transaction.getWithdrawalComponent().toString());
+            }
+
+            allTransactions.add(transactionSummary);
+        }
+
+        return allTransactions;
+    }
+
+    /**
      * Get available balance for a specific component
      */
     @Transactional(readOnly = true)

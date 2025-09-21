@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,54 +9,75 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons as Icon } from '@expo/vector-icons';
-import { useAuth } from '../contexts/AuthContext';
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { MaterialIcons as Icon } from "@expo/vector-icons";
+import { useAuth } from "../contexts/AuthContext";
 
 const theme = {
-  primary: '#FF6B6B',
-  secondary: '#4ECDC4',
-  accent: '#45B7D1',
-  white: '#FFFFFF',
-  lightGray: '#F8F9FA',
-  darkGray: '#6C757D',
-  black: '#212529',
+  primary: "#FF6B6B",
+  secondary: "#4ECDC4",
+  accent: "#45B7D1",
+  white: "#FFFFFF",
+  lightGray: "#F8F9FA",
+  darkGray: "#6C757D",
+  black: "#212529",
 };
 
 const SignupScreen = ({ navigation }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
 
   const handleSignup = async () => {
-    if (!phoneNumber.trim() || !pin.trim() || !confirmPin.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (
+      !phoneNumber.trim() ||
+      !name.trim() ||
+      !pin.trim() ||
+      !confirmPin.trim()
+    ) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (name.length < 3 || name.length > 35) {
+      Alert.alert("Error", "Name must be between 3 and 35 characters");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
+      Alert.alert(
+        "Error",
+        "Name can only contain letters, numbers, underscore, hyphen, and dot"
+      );
       return;
     }
 
     if (pin.length !== 4) {
-      Alert.alert('Error', 'PIN must be 4 digits');
+      Alert.alert("Error", "PIN must be 4 digits");
       return;
     }
 
     if (pin !== confirmPin) {
-      Alert.alert('Error', 'PIN and Confirm PIN do not match');
+      Alert.alert("Error", "PIN and Confirm PIN do not match");
       return;
     }
 
     setIsLoading(true);
-    const result = await signup(phoneNumber.trim(), pin.trim());
+    const result = await signup(phoneNumber.trim(), name.trim(), pin.trim());
     setIsLoading(false);
 
     if (result.success) {
-      Alert.alert('Success', result.message || 'Account created successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
+      Alert.alert(
+        "Success",
+        result.message || "Account created successfully!",
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
     } else {
-      Alert.alert('Signup Failed', result.error);
+      Alert.alert("Signup Failed", result.error);
     }
   };
 
@@ -70,7 +91,7 @@ const SignupScreen = ({ navigation }) => {
       style={styles.container}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -82,7 +103,12 @@ const SignupScreen = ({ navigation }) => {
 
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Icon name="phone" size={20} color={theme.darkGray} style={styles.inputIcon} />
+              <Icon
+                name="phone"
+                size={20}
+                color={theme.darkGray}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Phone Number"
@@ -95,7 +121,30 @@ const SignupScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.inputContainer}>
-              <Icon name="lock" size={20} color={theme.darkGray} style={styles.inputIcon} />
+              <Icon
+                name="person"
+                size={20}
+                color={theme.darkGray}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Name (3-35 characters)"
+                placeholderTextColor={theme.darkGray}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="none"
+                maxLength={35}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Icon
+                name="lock"
+                size={20}
+                color={theme.darkGray}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="4-Digit PIN"
@@ -109,7 +158,12 @@ const SignupScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.inputContainer}>
-              <Icon name="lock-outline" size={20} color={theme.darkGray} style={styles.inputIcon} />
+              <Icon
+                name="lock-outline"
+                size={20}
+                color={theme.darkGray}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Confirm 4-Digit PIN"
@@ -128,7 +182,7 @@ const SignupScreen = ({ navigation }) => {
               disabled={isLoading}
             >
               <Text style={styles.signupButtonText}>
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Text>
             </TouchableOpacity>
 
@@ -138,7 +192,10 @@ const SignupScreen = ({ navigation }) => {
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity style={styles.loginButton} onPress={navigateToLogin}>
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={navigateToLogin}
+            >
               <Text style={styles.loginButtonText}>
                 Already have an account? Login
               </Text>
@@ -159,19 +216,19 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.white,
     marginTop: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 18,
@@ -183,7 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.white,
     borderRadius: 20,
     padding: 30,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -193,8 +250,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.lightGray,
     borderRadius: 15,
     marginBottom: 20,
@@ -213,8 +270,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.secondary,
     borderRadius: 15,
     height: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 10,
   },
   disabledButton: {
@@ -223,11 +280,11 @@ const styles = StyleSheet.create({
   signupButtonText: {
     color: theme.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 20,
   },
   dividerLine: {
@@ -241,13 +298,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   loginButton: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 15,
   },
   loginButtonText: {
     color: theme.secondary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

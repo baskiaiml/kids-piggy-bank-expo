@@ -5,6 +5,7 @@ USE `piggy_bank`;
 CREATE TABLE IF NOT EXISTS `users` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `phone_number` VARCHAR(20) NOT NULL UNIQUE,
+    `name` VARCHAR(35) NOT NULL,
     `pin_hash` VARCHAR(255) NOT NULL,
     `last_login` DATETIME NULL,
     `created_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
