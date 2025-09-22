@@ -1,19 +1,28 @@
 ﻿import React, { createContext, useContext, useState, useEffect } from "react";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { environmentConfig, log, debug } from "../config/environment";
 
 const AuthContext = createContext();
 
 // API Configuration - Smart configuration for web and mobile
 const getApiBaseUrl = () => {
-  // Check if running on web
-  if (Platform.OS === "web") {
-    return "http://localhost:8085/api";
+  // Use environment configuration
+  const baseUrl = environmentConfig.apiBaseUrl;
+
+  // In development mode, handle platform-specific URLs
+  if (environmentConfig.name === "development") {
+    // Check if running on web
+    if (Platform.OS === "web") {
+      return "http://localhost:8085/api";
+    }
+    // For mobile devices/emulators, use the Android emulator's host IP
+    // Android emulator maps 10.0.2.2 to the host machine's localhost
+    return "http://10.0.2.2:8085/api";
   }
 
-  // For mobile devices/emulators, use the Android emulator's host IP
-  // Android emulator maps 10.0.2.2 to the host machine's localhost
-  return "http://10.0.2.2:8085/api";
+  // For staging and production, use the configured URL
+  return baseUrl;
 };
 
 const API_BASE_URL = getApiBaseUrl();

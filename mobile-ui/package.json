@@ -6,7 +6,10 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:production": "node scripts/build-production.js",
+    "build:staging": "REACT_NATIVE_ENV=staging eas build --platform android --profile preview",
+    "build:development": "eas build --platform android --profile development"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
