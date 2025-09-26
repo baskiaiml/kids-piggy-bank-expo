@@ -1,43 +1,48 @@
 // Environment Configuration for Kids Piggy Bank Mobile App
-// This file manages different server URLs for development, staging, and production
+// Simple configuration: Development (emulator) vs Production (Play Store)
+
+// ========================================
+// 🚀 QUICK URL SWITCHING - CHANGE HERE
+// ========================================
+
+// For testing in emulator, set this to true
+const USE_DEV_SERVER = false;
+
+// Dev server URL (for emulator testing)
+const DEV_SERVER_URL = "http://10.0.2.2:8085/api"; // Android emulator
+// const DEV_SERVER_URL = "http://localhost:8085/api"; // Web/other platforms
+
+// Production server URL (for Play Store)
+const PROD_SERVER_URL = "http://your-alb-dns-name.elb.amazonaws.com:8080/api";
+
+// ========================================
+// END OF CONFIGURATION
+// ========================================
 
 const environments = {
   development: {
     name: "Development",
-    apiBaseUrl: "http://localhost:8085/api",
-    enableLogging: true,
-    enableDebugMode: true,
-  },
-  staging: {
-    name: "Staging",
-    apiBaseUrl: "https://staging-api.yourdomain.com/api",
+    apiBaseUrl: DEV_SERVER_URL,
     enableLogging: true,
     enableDebugMode: true,
   },
   production: {
     name: "Production",
-    apiBaseUrl: "https://api.yourdomain.com/api",
+    apiBaseUrl: PROD_SERVER_URL,
     enableLogging: false,
     enableDebugMode: false,
   },
 };
 
-// Get current environment from build configuration
+// Get current environment based on USE_DEV_SERVER flag
 const getCurrentEnvironment = () => {
-  // In React Native, you can use __DEV__ to detect development mode
-  if (__DEV__) {
-    return "development";
-  }
-
-  // For production builds, you can set this via environment variables
-  // or build scripts
-  return process.env.REACT_NATIVE_ENV || "production";
+  return USE_DEV_SERVER ? "development" : "production";
 };
 
 // Get environment configuration
 const getEnvironmentConfig = () => {
   const currentEnv = getCurrentEnvironment();
-  return environments[currentEnv] || environments.production;
+  return environments[currentEnv];
 };
 
 // Platform-specific API URL configuration
