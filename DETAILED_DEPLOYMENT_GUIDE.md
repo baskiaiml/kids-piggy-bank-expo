@@ -71,25 +71,61 @@ Ensure your `server/Dockerfile` exists and is correct:
 
 ```dockerfile
 # Multi-stage Dockerfile for Spring Boot Application
-FROM maven:3.8.6-openjdk-11-slim AS build
+# This creates an optimized production image
+
+# Stage 1: Build the application
+FROM maven:3.9.6-openjdk-17-slim AS build
+
+# Set working directory
 WORKDIR /app
+
+# Copy pom.xml first for better layer caching
 COPY pom.xml .
+
+# Download dependencies
 RUN mvn dependency:go-offline -B
+
+# Copy source code
 COPY src ./src
+
+# Build the application
 RUN mvn clean package -DskipTests
 
-FROM openjdk:11-jre-slim
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Stage 2: Create runtime image
+FROM openjdk:17-jre-slim
+
+# Install necessary packages
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create app user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
 WORKDIR /app
+
+# Copy the JAR file from build stage
 COPY --from=build /app/target/piggy-bank-*.jar app.jar
+
+# Copy SQL scripts
 COPY --from=build /app/src/main/resources/sql ./sql
+
+# Change ownership to app user
 RUN chown -R appuser:appuser /app
 USER appuser
+
+# Expose port
 EXPOSE 8080
+
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Set JVM options for containerized environment
 ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
+# Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
 ```
 
@@ -464,6 +500,16 @@ curl -X POST http://your-alb-dns.elb.amazonaws.com:8080/api/auth/login \
 ## Troubleshooting
 
 ### Common Server Issues
+
+#### Issue: Java Version Mismatch
+
+**Symptoms**: Application fails to start or throws ClassNotFoundException
+**Solutions**:
+
+1. Ensure Dockerfile uses Java 17 (maven:3.9.6-openjdk-17-slim and openjdk:17-jre-slim)
+2. Verify your local Java version matches: `java -version`
+3. Check Spring Boot version compatibility with Java 17
+4. Update pom.xml if needed to specify Java 17
 
 #### Issue: Pipeline Build Fails
 
