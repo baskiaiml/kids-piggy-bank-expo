@@ -9,7 +9,7 @@ echo "🔄 Deploying CodePipeline for CI/CD..."
 # Configuration
 STACK_NAME="KidsPiggyBankPipeline"
 REGION="us-east-1"
-TEMPLATE_FILE="codepipeline.yml"
+TEMPLATE_FILE="deployment/codepipeline.yml"
 
 # Check if parameters are provided
 if [ $# -lt 4 ]; then

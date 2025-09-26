@@ -9,7 +9,7 @@ echo "🚀 Deploying Kids Piggy Bank Infrastructure to AWS..."
 # Configuration
 STACK_NAME="KidsPiggyBankInfrastructure"
 REGION="us-east-1"
-TEMPLATE_FILE="ecs-fargate-infrastructure.yml"
+TEMPLATE_FILE="deployment/ecs-fargate-infrastructure.yml"
 
 # Check if AWS CLI is installed
 if ! command -v aws &> /dev/null; then
@@ -27,8 +27,8 @@ fi
 GITHUB_OWNER=$1
 GITHUB_REPO=$2
 GITHUB_TOKEN=$3
-DB_PASSWORD=${4:-$(openssl rand -base64 32)}
-JWT_SECRET=${5:-$(openssl rand -base64 64)}
+DB_PASSWORD=${4:-$(openssl rand -base64 12 | tr -d "=+/" | cut -c1-16)}
+JWT_SECRET=${5:-$(openssl rand -base64 48 | tr -d "=+/" | cut -c1-64)}
 
 echo "📋 Configuration:"
 echo "  Stack Name: $STACK_NAME"

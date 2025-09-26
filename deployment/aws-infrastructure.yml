@@ -257,12 +257,16 @@ Resources:
       Port: 8080
       Protocol: HTTP
       VpcId: !Ref VPC
+      TargetType: instance
       HealthCheckPath: /actuator/health
       HealthCheckProtocol: HTTP
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
+      Targets:
+        - Id: !Ref WebServer
+          Port: 8080
 
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -273,13 +277,6 @@ Resources:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: 80
       Protocol: HTTP
-
-  ALBTargetGroupAttachment:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroupAttachment
-    Properties:
-      TargetGroupArn: !Ref ALBTargetGroup
-      TargetId: !Ref WebServer
-      Port: 8080
 
 Outputs:
   WebServerPublicIP:
