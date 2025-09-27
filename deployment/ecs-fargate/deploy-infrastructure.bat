@@ -6,7 +6,7 @@ echo Deploying Kids Piggy Bank Infrastructure to AWS...
 
 REM Configuration
 set STACK_NAME=KidsPiggyBankInfrastructure
-set REGION=us-east-1
+set REGION=ap-south-1
 set TEMPLATE_FILE=deployment\ecs-fargate-infrastructure.yml
 
 REM Check if AWS CLI is installed

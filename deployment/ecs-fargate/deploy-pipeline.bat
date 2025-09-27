@@ -6,13 +6,13 @@ echo 🔄 Deploying CodePipeline for CI/CD...
 
 REM Configuration
 set STACK_NAME=KidsPiggyBankPipeline
-set REGION=us-east-1
+set REGION=ap-south-1
 set TEMPLATE_FILE=deployment\codepipeline.yml
 
 REM Check if parameters are provided
 if "%1"=="" (
     echo Usage: %0 ^<GitHubOwner^> ^<GitHubRepo^> ^<GitHubToken^> ^<ECRRepositoryURI^> ^<ECSClusterName^> ^<DevServiceName^> ^<ProdServiceName^>
-    echo Example: %0 yourusername kids-piggy-bank-expo ghp_xxxxxxxxxxxx 123456789.dkr.ecr.us-east-1.amazonaws.com/kids-piggy-bank piggy-bank-cluster piggy-bank-dev-service piggy-bank-prod-service
+    echo Example: %0 yourusername kids-piggy-bank-expo ghp_xxxxxxxxxxxx 123456789.dkr.ecr.ap-south-1.amazonaws.com/kids-piggy-bank piggy-bank-cluster piggy-bank-dev-service piggy-bank-prod-service
     exit /b 1
 )
 

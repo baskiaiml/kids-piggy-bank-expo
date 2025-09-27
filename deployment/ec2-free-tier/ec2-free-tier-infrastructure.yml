@@ -1,23 +1,18 @@
-# AWS CloudFormation Template for Kids Piggy Bank Infrastructure
+# AWS CloudFormation Template for EC2 Free Tier + RDS MySQL
 # This template creates:
-# - VPC with public/private subnets
-# - RDS MySQL database
-# - EC2 instance with security groups
-# - Application Load Balancer
-# - Route 53 DNS (if domain provided)
+# - VPC with public subnet
+# - RDS MySQL database (Free Tier)
+# - EC2 instance (Free Tier)
+# - Security Groups
+# - Minimal cost setup
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Kids Piggy Bank Infrastructure'
+Description: 'Kids Piggy Bank EC2 Free Tier Infrastructure'
 
 Parameters:
   KeyPairName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access
-  
-  DomainName:
-    Type: String
-    Default: ''
-    Description: Domain name for the application (optional)
   
   DBPassword:
     Type: String
@@ -57,8 +52,8 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
 
-  # Public Subnets
-  PublicSubnet1:
+  # Public Subnet
+  PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -67,41 +62,9 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: PiggyBank-Public-Subnet-1
+          Value: PiggyBank-Public-Subnet
 
-  PublicSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs '']
-      CidrBlock: 10.0.2.0/24
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: PiggyBank-Public-Subnet-2
-
-  # Private Subnets
-  PrivateSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !GetAZs '']
-      CidrBlock: 10.0.3.0/24
-      Tags:
-        - Key: Name
-          Value: PiggyBank-Private-Subnet-1
-
-  PrivateSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs '']
-      CidrBlock: 10.0.4.0/24
-      Tags:
-        - Key: Name
-          Value: PiggyBank-Private-Subnet-2
-
-  # Route Tables
+  # Route Table
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -118,24 +81,18 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  PublicSubnet1RouteTableAssociation:
+  PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicSubnet1
-
-  PublicSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicSubnet2
+      SubnetId: !Ref PublicSubnet
 
   # Security Groups
   WebSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: PiggyBank-Web-SG
-      GroupDescription: Security group for web servers
+      GroupDescription: Security group for web server
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -149,6 +106,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
@@ -175,13 +136,12 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Subnet group for RDS
       SubnetIds:
-        - !Ref PrivateSubnet1
-        - !Ref PrivateSubnet2
+        - !Ref PublicSubnet
       Tags:
         - Key: Name
           Value: PiggyBank-DB-SubnetGroup
 
-  # RDS Database
+  # RDS Database (Free Tier)
   Database:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -199,27 +159,27 @@ Resources:
       DBSubnetGroupName: !Ref DBSubnetGroup
       BackupRetentionPeriod: 7
       MultiAZ: false
-      PubliclyAccessible: false
+      PubliclyAccessible: true
       StorageEncrypted: true
       Tags:
         - Key: Name
           Value: PiggyBank-Database
 
-  # EC2 Instance
+  # EC2 Instance (Free Tier)
   WebServer:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-0c02fb55956c7d316  # Amazon Linux 2 AMI
-      InstanceType: t3.micro
+      InstanceType: t2.micro
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !Ref WebSecurityGroup
-      SubnetId: !Ref PublicSubnet1
+      SubnetId: !Ref PublicSubnet
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
-          yum install -y java-11-amazon-corretto-headless
+          yum install -y java-17-amazon-corretto-headless
           yum install -y mysql
           
           # Create application directory
@@ -234,50 +194,6 @@ Resources:
         - Key: Name
           Value: PiggyBank-WebServer
 
-  # Application Load Balancer
-  ApplicationLoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: PiggyBank-ALB
-      Scheme: internet-facing
-      Type: application
-      Subnets:
-        - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
-      SecurityGroups:
-        - !Ref WebSecurityGroup
-      Tags:
-        - Key: Name
-          Value: PiggyBank-ALB
-
-  ALBTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: PiggyBank-Targets
-      Port: 8080
-      Protocol: HTTP
-      VpcId: !Ref VPC
-      TargetType: instance
-      HealthCheckPath: /actuator/health
-      HealthCheckProtocol: HTTP
-      HealthCheckIntervalSeconds: 30
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 3
-      Targets:
-        - Id: !Ref WebServer
-          Port: 8080
-
-  ALBListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroup
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: 80
-      Protocol: HTTP
-
 Outputs:
   WebServerPublicIP:
     Description: Public IP address of the web server
@@ -285,11 +201,11 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-WebServerPublicIP
 
-  LoadBalancerDNS:
-    Description: DNS name of the load balancer
-    Value: !GetAtt ApplicationLoadBalancer.DNSName
+  WebServerPublicDNS:
+    Description: Public DNS name of the web server
+    Value: !GetAtt WebServer.PublicDnsName
     Export:
-      Name: !Sub ${AWS::StackName}-LoadBalancerDNS
+      Name: !Sub ${AWS::StackName}-WebServerPublicDNS
 
   DatabaseEndpoint:
     Description: RDS instance endpoint

@@ -1,0 +1,179 @@
+# GitLab CI/CD Pipeline for Kids Piggy Bank
+# Integrates with AWS Free Tier (EC2 + RDS)
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  # AWS Configuration
+  AWS_DEFAULT_REGION: "ap-south-1"
+  APP_NAME: "kids-piggy-bank"
+  
+  # Database Configuration
+  DB_HOST: "your-rds-endpoint.amazonaws.com"
+  DB_NAME: "piggy_bank"
+  DB_USERNAME: "admin"
+  
+  # Application Configuration
+  SPRING_PROFILES_ACTIVE: "prod"
+
+# Build Stage
+build:
+  stage: build
+  image: maven:3.9.6-openjdk-17-slim
+  script:
+    - echo "Building Spring Boot application..."
+    - cd server
+    - mvn clean package -DskipTests
+    - ls -la target/
+  artifacts:
+    paths:
+      - server/target/*.jar
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+
+# Test Stage
+test:
+  stage: test
+  image: maven:3.9.6-openjdk-17-slim
+  services:
+    - mysql:8.0
+  variables:
+    MYSQL_DATABASE: piggy_bank_test
+    MYSQL_ROOT_PASSWORD: testpassword
+    MYSQL_USER: testuser
+    MYSQL_PASSWORD: testpassword
+  script:
+    - echo "Running tests..."
+    - cd server
+    - mvn test
+  only:
+    - main
+    - develop
+
+# Deploy to Development
+deploy_dev:
+  stage: deploy
+  image: amazon/aws-cli:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "Deploying to development environment..."
+    
+    # Stop existing application
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "sudo pkill -f 'java.*piggy-bank' || true"
+    
+    # Copy JAR file to EC2
+    - scp -o StrictHostKeyChecking=no server/target/*.jar ec2-user@$EC2_HOST:/home/ec2-user/
+    
+    # Create application directory
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "mkdir -p /opt/piggy-bank"
+    
+    # Move JAR to application directory
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "sudo mv /home/ec2-user/*.jar /opt/piggy-bank/app.jar"
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "sudo chown ec2-user:ec2-user /opt/piggy-bank/app.jar"
+    
+    # Create application.properties for production
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "cat > /opt/piggy-bank/application-prod.properties << EOF
+spring.datasource.url=jdbc:mysql://$DB_HOST:3306/$DB_NAME?useSSL=false&allowPublicKeyRetrieval=true
+spring.datasource.username=$DB_USERNAME
+spring.datasource.password=$DB_PASSWORD
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=false
+
+# JWT Configuration
+jwt.secret=$JWT_SECRET
+jwt.expiration=86400000
+
+# CORS Configuration
+cors.allowed-origins=http://$EC2_HOST:8080,https://$EC2_HOST:8080
+
+# Logging
+logging.level.root=INFO
+logging.level.com.piggybank=INFO
+EOF"
+    
+    # Start application
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "cd /opt/piggy-bank && nohup java -jar -Dspring.profiles.active=prod app.jar > app.log 2>&1 &"
+    
+    # Wait for application to start
+    - sleep 30
+    
+    # Health check
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "curl -f http://localhost:8080/actuator/health || exit 1"
+    
+    - echo "Deployment to development completed successfully!"
+    - echo "Application URL: http://$EC2_HOST:8080"
+  only:
+    - develop
+  when: manual
+
+# Deploy to Production
+deploy_prod:
+  stage: deploy
+  image: amazon/aws-cli:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "Deploying to production environment..."
+    
+    # Create backup of current version
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "sudo cp /opt/piggy-bank/app.jar /opt/piggy-bank/app.jar.backup.$(date +%Y%m%d_%H%M%S) || true"
+    
+    # Stop existing application gracefully
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "sudo pkill -f 'java.*piggy-bank' || true"
+    - sleep 10
+    
+    # Copy JAR file to EC2
+    - scp -o StrictHostKeyChecking=no server/target/*.jar ec2-user@$EC2_HOST:/home/ec2-user/
+    
+    # Move JAR to application directory
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "sudo mv /home/ec2-user/*.jar /opt/piggy-bank/app.jar"
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "sudo chown ec2-user:ec2-user /opt/piggy-bank/app.jar"
+    
+    # Start application
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "cd /opt/piggy-bank && nohup java -jar -Dspring.profiles.active=prod app.jar > app.log 2>&1 &"
+    
+    # Wait for application to start
+    - sleep 30
+    
+    # Health check
+    - ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "curl -f http://localhost:8080/actuator/health || exit 1"
+    
+    - echo "Deployment to production completed successfully!"
+    - echo "Application URL: http://$EC2_HOST:8080"
+  only:
+    - main
+  when: manual
+
+# Database Migration Job
+migrate_database:
+  stage: deploy
+  image: mysql:8.0
+  script:
+    - echo "Running database migrations..."
+    - mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME < server/src/main/resources/sql/01_create_database.sql || true
+    - mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME < server/src/main/resources/sql/02_create_tables.sql || true
+    - mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME < server/src/main/resources/sql/03_create_indexes.sql || true
+    - mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME < server/src/main/resources/sql/04_sample_data.sql || true
+    - echo "Database migrations completed!"
+  only:
+    - main
+  when: manual

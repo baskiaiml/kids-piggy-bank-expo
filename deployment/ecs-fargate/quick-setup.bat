@@ -78,7 +78,7 @@ if %errorlevel% neq 0 (
 REM Get infrastructure outputs
 echo Getting infrastructure outputs...
 set STACK_NAME=KidsPiggyBankInfrastructure
-set REGION=us-east-1
+set REGION=ap-south-1
 
 for /f "delims=" %%i in ('aws cloudformation describe-stacks --stack-name %STACK_NAME% --region %REGION% --query "Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue" --output text') do set LOAD_BALANCER_DNS=%%i
 for /f "delims=" %%i in ('aws cloudformation describe-stacks --stack-name %STACK_NAME% --region %REGION% --query "Stacks[0].Outputs[?OutputKey==`ECRRepositoryURI`].OutputValue" --output text') do set ECR_URI=%%i
