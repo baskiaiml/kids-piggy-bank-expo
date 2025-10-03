@@ -1,0 +1,141 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION: ap-south-1
+  EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+  EC2_USER: ubuntu
+  APP_NAME: kids-piggy-bank
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Build with Maven
+      run: |
+        cd server
+        mvn clean package -DskipTests
+
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment-package
+        cp server/target/*.jar deployment-package/
+        cp server/Dockerfile deployment-package/
+        cp -r server/src/main/resources deployment-package/
+        tar -czf deployment-package.tar.gz deployment-package/
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Deploy to EC2
+      run: |
+        # Create deployment script
+        cat > deploy-to-ec2.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "🚀 Starting deployment to EC2..."
+        
+        # Stop existing application
+        echo "⏹️ Stopping existing application..."
+        sudo docker stop $APP_NAME 2>/dev/null || true
+        sudo docker rm $APP_NAME 2>/dev/null || true
+        
+        # Remove old images
+        echo "🧹 Cleaning up old images..."
+        sudo docker image prune -f
+        
+        # Build new image
+        echo "🔨 Building new Docker image..."
+        cd deployment-package
+        sudo docker build -t $APP_NAME:latest .
+        
+        # Start new container
+        echo "▶️ Starting new container..."
+        sudo docker run -d \
+          --name $APP_NAME \
+          --restart unless-stopped \
+          -p 8080:8080 \
+          -e SPRING_PROFILES_ACTIVE=prod \
+          -e DB_HOST=$DB_HOST \
+          -e DB_PORT=$DB_PORT \
+          -e DB_NAME=$DB_NAME \
+          -e DB_USERNAME=$DB_USERNAME \
+          -e DB_PASSWORD=$DB_PASSWORD \
+          -e JWT_SECRET=$JWT_SECRET \
+          $APP_NAME:latest
+        
+        # Health check
+        echo "🏥 Performing health check..."
+        sleep 30
+        if curl -f http://localhost:8080/api/health 2>/dev/null; then
+          echo "✅ Deployment successful!"
+        else
+          echo "❌ Health check failed!"
+          sudo docker logs $APP_NAME
+          exit 1
+        fi
+        
+        echo "🎉 Deployment completed successfully!"
+        EOF
+        
+        chmod +x deploy-to-ec2.sh
+        
+        # Copy files to EC2
+        echo "📦 Uploading deployment package..."
+        scp -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem deployment-package.tar.gz $EC2_USER@$EC2_INSTANCE_ID:/home/$EC2_USER/
+        scp -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem deploy-to-ec2.sh $EC2_USER@$EC2_INSTANCE_ID:/home/$EC2_USER/
+        
+        # Execute deployment on EC2
+        echo "🚀 Executing deployment on EC2..."
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem $EC2_USER@$EC2_INSTANCE_ID << 'EOF'
+          # Extract deployment package
+          tar -xzf deployment-package.tar.gz
+          
+          # Set environment variables
+          export APP_NAME=kids-piggy-bank
+          export DB_HOST=${{ secrets.DB_HOST }}
+          export DB_PORT=${{ secrets.DB_PORT }}
+          export DB_NAME=${{ secrets.DB_NAME }}
+          export DB_USERNAME=${{ secrets.DB_USERNAME }}
+          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          export JWT_SECRET=${{ secrets.JWT_SECRET }}
+          
+          # Run deployment script
+          ./deploy-to-ec2.sh
+        EOF
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment to EC2 completed successfully!"
+        else
+          echo "❌ Deployment to EC2 failed!"
+        fi
